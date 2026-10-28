@@ -1,33 +1,56 @@
-# Zihao Xu 的个人网站
+# Zihao Xu 的个人网站：一张桌子，十个宇宙
 
-Next.js 15 静态站，部署在 GitHub Pages。中英双语切换、深浅色主题、深色模式下有 WebGL 星空背景。
-视觉和部分组件改编自 [EdwinjJ1/personal-website](https://github.com/EdwinjJ1/personal-website) 的 `001/`（MIT）。
+Blender 建模的工位场景，同一个机位渲染后合成 10 种印刷 / 漫画风格，网页里用 WebGL 切换。点桌上的物件看对应的内容，点面具或按空格换宇宙。
 
-## 本地运行
+改编自 [EdwinjJ1/personal-website](https://github.com/EdwinjJ1/personal-website) 的 `002/`（MIT），原作者的文字、照片、项目和 logo 都已经换掉。现在桌上和面板里的内容是占位，标了 `TODO` 的地方要换成自己的。
+
+## 怎么跑
 
 ```sh
-npm install
-npm run dev      # http://localhost:3000
-npm run build    # 输出到 out/
+npm run dev      # http://localhost:4173
+npm test         # 坐标换算 + 内容完整性
 ```
+
+`site/` 是纯静态站，没有构建步骤。
 
 ## 改内容
 
-所有内容都在 `src/data/`，每段文字都写成 `{ zh: '中文', en: 'English' }`。标了 `TODO` 的是占位，要换成你自己的。
+| 想换的东西 | 改哪里 | 要不要重新渲染 |
+|---|---|---|
+| 面板里的自我介绍、项目、经历、联系方式 | `site/js/content.js` | 不用 |
+| 项目列表、博客、友链、摄影清单 | `site/assets/data/*.json`，照片放 `site/assets/photos/` | 不用 |
+| 软木板、剪报、海报、刊物封面、名片、屏幕上的字 | `pipeline/textures.py` | 要 |
+| 桌上有什么、摆在哪 | `blender/layout.py`（物件的 `hot="名字"` 就是网页里的热点名） | 要 |
+| 某个宇宙的画风 | `pipeline/stylize.py` 里同名的函数 | 只跑 `npm run stylize` |
+| 唱片机的歌单 | `pipeline/sync_music.py` 的 `PLAYLIST_ID` | 不用 |
+| 显示器里的 AI 对话 | 部署 `workers/api`（Cloudflare Worker），把地址填进 `content.js` 的 `CHAT.api`；留空就只用预设回答 | 不用 |
 
-| 想改的 | 文件 |
-|---|---|
-| 名字、一句话介绍、所在地、自我介绍、社交链接、头像 | `src/data/profile.ts` |
-| 经历时间线、技能 | `src/data/profile.ts` |
-| 项目 | `src/data/projects.ts` |
-| 博客文章 | `src/data/posts.ts` |
-| 摄影 | `src/data/photos.ts`，图片放 `public/photos/` |
-| 网站标题、简介、网址 | `src/app/layout.tsx` |
+加了新热点要在 `content.js` 的 `HOTS` 和 `LABELS` 里登记，测试会检查。
 
-头像：把方形照片放到 `public/avatar.jpg`，再把 `profile.ts` 里的 `avatar` 改成 `'/avatar.jpg'`。
-照片：先缩到长边 2000px 左右再放进仓库，原图别提交，不然仓库会很快变大。
+## 重新出图
+
+```sh
+npm run textures       # 贴图 → blender/tex
+npm run render         # Blender 分通道渲染 → build/passes（4K；草稿用 npm run render:draft，1600 宽）
+npm run stylize        # 合成 10 种风格 + 热点图 → site/assets
+```
+
+需要 Blender 5.x、uv、Node 22。没有装 Blender 的话，`pip install bpy` 也行：
+
+```sh
+python -c "import runpy, sys; sys.argv = ['blender', '--', '--out', 'build/passes', '--width', '1600']; runpy.run_path('blender/scene.py', run_name='__main__')"
+```
+
+贴图用的拉丁字体在 `pipeline/fonts/`；中文字体会在系统里找（macOS 的冬青黑、Linux 的文泉驿或 Noto CJK），都没有就在 `textures.py` 的 `CJK_FONTS` 里加一个路径。
 
 ## 部署
 
-推到 `main` 就会通过 `.github/workflows/deploy.yml` 自动发布。第一次需要在仓库的 **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**。
-网址是 `https://simon200401.github.io/Personal-website/`。以后绑定自定义域名时，Pages 会自动把子路径去掉，不用改代码。
+推到 `main` 就会通过 `.github/workflows/deploy.yml` 发布到 GitHub Pages，每 6 小时还会自动同步一次新闻和 GitHub 贡献墙。第一次需要在仓库 **Settings → Pages → Source** 里选 **GitHub Actions**。
+
+网址：`https://simon200401.github.io/Personal-website/`
+
+## 说明
+
+- 蜘蛛面具、蛛网、EARTH 编号来自原项目对《蜘蛛侠：平行宇宙》的致敬，图形是原作者自己画的。
+- 网页字体（Bangers、Comic Neue）自托管在 `site/fonts/`，国内访问不依赖 Google Fonts。
+- 新闻来自公开 RSS（Google AI、arXiv、BBC），每次部署时更新。

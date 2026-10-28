@@ -22,11 +22,8 @@ SOFTWARE.
 
 ---
 
-Portions of this project (src/components/Galaxy.tsx, src/components/BaseCard.tsx,
-src/components/ThemeToggle.tsx, src/components/SiteBackdrop.tsx,
-src/hooks/useTheme.ts, src/lib/theme.ts and the colour tokens in
-src/app/globals.css) are adapted from https://github.com/EdwinjJ1/personal-website
-and are covered by the following notice:
+This project is a fork of https://github.com/EdwinjJ1/personal-website (the 002/
+site). Its code is used under the following notice:
 
 MIT License
 
@@ -49,3 +46,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Fonts in pipeline/fonts/ and site/fonts/ (Anton, Archivo Black, Bangers, Caveat
+Brush, Comic Neue, Courier Prime, Oswald, Permanent Marker, PT Serif, Roboto
+Slab) are distributed under the SIL Open Font License 1.1 by their respective
+authors, via Fontsource.

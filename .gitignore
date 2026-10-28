@@ -1,7 +1,8 @@
+build/
 node_modules/
-.next/
-out/
-next-env.d.ts
-*.tsbuildinfo
-.env*.local
 .DS_Store
+__pycache__/
+promo/
+private/
+.dev.vars
+.wrangler/

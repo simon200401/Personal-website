@@ -1,0 +1,14 @@
+[
+ {
+  "slug": "hello-world",
+  "title": "你好，世界",
+  "excerpt": "第一篇文章：为什么做这个网站，以及之后会在这里写什么。",
+  "content": "这是一篇占位文章，换成你自己的内容就好。\n\n## 怎么加新文章\n\n在 site/assets/data/blog.json 里加一项：slug、标题、摘要、正文（支持空行分段和 ## 小标题）、日期、标签。",
+  "date": "2026-10-28",
+  "readTime": "1 分钟阅读",
+  "tags": [
+   "随笔"
+  ],
+  "language": "zh"
+ }
+]

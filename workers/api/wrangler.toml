@@ -1,0 +1,39 @@
+# Personal-site API worker: NetEase now-playing proxy + AI card chat.
+#
+# Deploy:
+#   cd workers/api
+#   npx wrangler login
+#   npx wrangler secret put AI_API_KEY        # e.g. Groq key from https://console.groq.com/keys (free tier)
+#   npx wrangler secret put NETEASE_COOKIE    # "MUSIC_U=xxxx" from music.163.com browser cookies
+#   npx wrangler secret put JOURNAL_PASSWORD  # 日记密码
+#   npx wrangler secret put JOURNAL_SECRET     # 加密密钥：随机长串，如 `openssl rand -base64 32`；设定后别换，换了旧日记解不开
+#   npx wrangler deploy                        # 第一次部署会自动建好下面的 KV
+#
+# Then put the deployed URL (e.g. https://personal-site-api.<account>.workers.dev) into CHAT.api in site/js/content.js.
+
+name = "personal-site-api"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# 对话主通道：Workers AI 原生绑定，不需要 API 密钥
+[ai]
+binding = "AI"
+
+[vars]
+WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+# OpenAI-compatible endpoint — swap freely between free providers
+# (Groq / OpenRouter / Mistral / Cerebras all speak this protocol, see github.com/zebbern/no-cost-ai)
+AI_API_BASE = "https://api.groq.com/openai/v1"
+AI_MODEL = "llama-3.3-70b-versatile"
+# NetEase Cloud Music numeric user id (profile page URL: music.163.com/#/user/home?id=<uid>)
+NETEASE_UID = ""   # TODO
+# LeetCode username for the /leetcode solve-stats endpoint (public data, no auth needed)
+LEETCODE_USERNAME = ""   # TODO
+# Comma-separated list of allowed origins
+# Production origins. Any localhost port is allowed automatically, so the
+# dev server can move without this list going stale.
+ALLOWED_ORIGINS = "https://simon200401.github.io"
+
+# 私人日记：加密后的正文存在这个 KV 里（第一次 deploy 时 wrangler 自动创建并写回 id）
+[[kv_namespaces]]
+binding = "JOURNAL"

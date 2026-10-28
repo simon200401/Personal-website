@@ -1,25 +1,18 @@
 {
-  "name": "personal-website",
-  "version": "0.1.0",
+  "name": "zihao-personal-site",
   "private": true,
+  "type": "module",
+  "description": "一张桌子，十个宇宙：Blender 渲染 + WebGL 的个人网站",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "npx serve out"
-  },
-  "dependencies": {
-    "framer-motion": "^14.7.1",
-    "next": "^15.5.28",
-    "ogl": "^1.0.11",
-    "react": "^19.1.10",
-    "react-dom": "^19.1.10"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^20.19.43",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+    "dev": "python3 -m http.server 4173 --directory site",
+    "test": "node --test --experimental-test-coverage \"tests/*.test.mjs\" && python3 -m unittest discover -s tests -p \"test_*.py\"",
+    "textures": "uv run pipeline/textures.py blender/tex",
+    "render": "blender -b --factory-startup -P blender/scene.py -- --out build/passes --width 3840 --passes albedo,emit,id,normal,depth,lights",
+    "stylize": "uv run pipeline/stylize.py build/passes site/assets",
+    "build": "npm run textures && npm run render && npm run stylize",
+    "news": "python3 pipeline/sync_news.py",
+    "music": "python3 pipeline/sync_music.py",
+    "github": "python3 pipeline/sync_github.py",
+    "render:draft": "blender -b --factory-startup -P blender/scene.py -- --out build/passes --width 1600 --passes albedo,emit,id,normal,depth,lights"
   }
 }
