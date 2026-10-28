@@ -3,8 +3,9 @@
 俯视机位、铺满物件、墙上软木板 + 剪报，右侧黑钢框落地窗外是楼群。
 每个可点的东西带 hot 名字，前端按它开面板：
   board / press / monitor / keyboard / mask（切换宇宙）/ zine-1 / zine-2 / zine-3 / zine-4（四个项目）
-  notebook（博客）/ phone / trophy / plant（兴趣）/ table-model / camera + photos（摄影）/ badge（工作）
-  news（报纸）/ projects（手柄）/ friends（杯子）/ music（唱片）/ contact / fries / github（显示器前的 3D 贡献城）
+  notebook（博客）/ phone / plant（兴趣）/ camera + photos（摄影）/ badge（工作）/ news（报纸）/ games（手柄）
+  music（唱片）/ contact（名片）/ fries / cars（显示器前的赛道和保时捷）/ calendar（年度回顾）/ globe（去过的地方）
+  movies（电影票根）/ cards（卡片盒：认知积累）/ cat（美短）/ now（NOW 便签）
 """
 import json
 import math
@@ -180,50 +181,47 @@ def build_monitor():
     slab("mon_base", 0.26, 0.17, 0.012, 0.03, (0, 0.05, 0.006), silver, hot="monitor").parent = root
     lt = light("screen_light", "AREA", "screen", 6, "#ffb07a", (0, -0.06, 0), rot=(-math.pi / 2, 0, 0), size=0.6, size_y=0.36)
     lt.parent = tilt
-    decal("sticky_a", 0.085, 0.071, (-0.87, 0.045), "sticky_1.png", yaw=-9, hot="monitor")   # 往左前方挪了一点，给贡献城的底座让位
+    decal("sticky_a", 0.095, 0.08, (-0.87, 0.045), "now.png", yaw=-9, hot="now")   # NOW 便签：最近在做什么
     decal("sticky_b", 0.085, 0.071, (-0.40, 0.07), "sticky_0.png", yaw=7, hot="keyboard")
 
 
-def build_skyline():
-    """GitHub 贡献城：过去一年每天一根柱子，53 周 × 7 天，和贡献墙一样从左到右是从旧到新、最后面一排是周日。
-    柱子挨着立，高度按当天的贡献次数（开根号，小的日子也看得见），颜色是 GitHub 的四档绿；没有贡献的日子是一块薄砖。
-    站在显示器前面一块梯形底座上，底座正面印着用户名和这一年。数据是 textures.py 从 github.json 转出来的 skyline.json。
-    柱子的网格四角登记成 surface "skyline"：stylize.py 照它给柱子的每个像素算出在时间轴上的位置，网页悬停时的扫光用。"""
-    with open(os.path.join(ROOT, "tex", "skyline.json")) as f:
-        sky = json.load(f)
-    weeks, top = sky["weeks"], max(1, sky["max"])
-    P, hb, slope, rim = 0.0088, 0.016, 0.014, 0.006       # 柱子边长、底座高、底座斜面的水平宽、柱子外留的边
-    gx, gy = len(weeks) * P / 2, 7 * P / 2
-    root = empty("gh_root", (-0.55, 0.17, T), (0, 0, R(4)))
-    bm = bmesh.new()
-    ring = lambda ex, ey, z: [bm.verts.new((sx * ex, sy * ey, z)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
-    lo, hi = ring(gx + rim + slope, gy + rim + slope, 0.0), ring(gx + rim, gy + rim, hb)
-    bm.faces.new(hi)
-    bm.faces.new(lo[::-1])
-    for i in range(4):
-        bm.faces.new((lo[i], lo[(i + 1) % 4], hi[(i + 1) % 4], hi[i]))
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    add("gh_base", bm, M("gh_base", "#1d1f24", 0.45), hot="github", parent=root)
-    # 正面斜面上的铭牌：竖直朝 -Y 的平面往后仰到和斜面一样，再沿法线往外挪一点免得和底座打架
-    lean = math.atan2(slope, hb)
-    out = Vector((0, -math.cos(lean), math.sin(lean)))
-    mid = Vector((0, -(gy + rim + slope / 2), hb / 2)) + out * 0.0005
-    plane("gh_label", 2 * (gx + rim + slope / 2) - 0.012, math.hypot(slope, hb) * 0.72, mid, tex("skyline_label.png", rough=0.6), rot=(-lean, 0, 0), hot="github", parent=root)
-    mats = [M("gh_l0", "#3a3e47", 0.6)] + [M(f"gh_l{k}", c, 0.45) for k, c in enumerate(("#9be9a8", "#40c463", "#30a14e", "#216e39"), 1)]
-    bm = bmesh.new()
-    for w, week in enumerate(weeks):
-        for d, cell in enumerate(week):
-            if cell is None:
-                continue
-            count, level = cell
-            h = 0.0012 if count == 0 else 0.005 + 0.075 * math.sqrt(count / top)
-            m = Matrix.Translation((-gx + (w + 0.5) * P, gy - (d + 0.5) * P, hb + h / 2)) @ Matrix.Diagonal((P, P, h, 1))
-            for f in {f for v in bmesh.ops.create_cube(bm, size=1.0, matrix=m)["verts"] for f in v.link_faces}:
-                f.material_index = level if count else 0
-    bars = add("gh_bars", bm, mats[0], hot="github", parent=root)
-    for mat in mats[1:]:
-        bars.data.materials.append(mat)
-    SURFACES["skyline"] = (root, [Vector((-gx, gy, hb)), Vector((gx, gy, hb)), Vector((gx, -gy, hb)), Vector((-gx, -gy, hb))])
+def porsche(name, loc, yaw, paint, hot=None, scale=1.0):
+    """风格化的 911：低矮的车身 + 圆顶座舱 + 后部溜背，四个轮子，圆头灯。长约 0.11 m（1:40 左右）。"""
+    s = scale
+    root = empty(name, loc, (0, 0, R(yaw)))
+    body, glass, tyre, rim, chrome = M(name + "_paint", paint, 0.25, metal=0.3), M("car_glass", "#1d2a38", 0.1), M("car_tyre", "#141416", 0.8), M("car_rim", "#c9ccd2", 0.3, metal=0.7), M("car_light", "#fff4d6", 0.2, emit=1.5)
+    # 车头朝 -X；下车身是圆角板，上面压一个半椭球当座舱和溜背
+    slab(name + "_floor", 0.110 * s, 0.046 * s, 0.018 * s, 0.014 * s, (0, 0, 0.016 * s), body, hot=hot).parent = root
+    ball(name + "_cabin", 1.0, (0.008 * s, 0, 0.024 * s), body, scale=(0.052 * s, 0.022 * s, 0.020 * s), half=True, hot=hot, parent=root)
+    ball(name + "_glass", 1.0, (0.002 * s, 0, 0.026 * s), glass, scale=(0.034 * s, 0.0215 * s, 0.0165 * s), half=True, hot=hot, parent=root)
+    ball(name + "_hood", 1.0, (-0.030 * s, 0, 0.022 * s), body, scale=(0.026 * s, 0.021 * s, 0.008 * s), half=True, hot=hot, parent=root)
+    box(name + "_wing", (0.012 * s, 0.040 * s, 0.002 * s), (0.050 * s, 0, 0.030 * s), body, hot=hot, parent=root)   # 后部小尾翼
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            x, y = (-0.034 if sx < 0 else 0.032) * s, sy * 0.022 * s
+            cyl(f"{name}_tyre{sx}{sy}", 0.0115 * s, 0.009 * s, (x, y, 0.0115 * s), tyre, rot=(math.pi / 2, 0, 0), seg=20, hot=hot, parent=root)
+            cyl(f"{name}_rim{sx}{sy}", 0.0068 * s, 0.0095 * s, (x, y, 0.0115 * s), rim, rot=(math.pi / 2, 0, 0), seg=16, hot=hot, parent=root)
+        ball(f"{name}_lamp{sx}", 0.0055 * s, (-0.052 * s, sx * 0.014 * s, 0.022 * s), chrome, scale=(0.6, 1, 1), hot=hot, parent=root)
+    return root
+
+
+def build_track():
+    """显示器前面的迷你赛道：一块底座上铺一圈跑道，内圈是草，弯道有红白路肩；保时捷停在直道上。"""
+    root = empty("track_root", (-0.55, 0.17, T), (0, 0, R(4)))
+    w, d = 0.46, 0.15
+    slab("track_base", w + 0.02, d + 0.02, 0.012, 0.035, (0, 0, 0.006), M("track_base", "#1d1f24", 0.45), hot="cars").parent = root
+    slab("track_asphalt", w, d, 0.004, 0.072, (0, 0, 0.014), M("track_asphalt", "#3a3d45", 0.85), hot="cars").parent = root
+    slab("track_grass", w - 0.07, d - 0.07, 0.005, 0.036, (0, 0, 0.0155), M("track_grass", "#3f9a55", 0.9), hot="cars").parent = root
+    kerb = [M("kerb_r", "#e5484d", 0.6), M("kerb_w", "#f4f1ea", 0.6)]
+    for side in (-1, 1):   # 两个弯道外沿的红白路肩
+        cx = side * (w / 2 - 0.072)
+        for k in range(9):
+            a = R(-80 + 20 * k) if side > 0 else R(100 + 20 * k)
+            x, y = cx + math.cos(a) * 0.072, math.sin(a) * 0.072
+            box(f"kerb{side}{k}", (0.012, 0.006, 0.003), (x, y, 0.0175), kerb[k % 2], rot=(0, 0, a + math.pi / 2), hot="cars", parent=root)
+    for k in range(8):   # 起跑线的黑白格
+        box(f"grid{k}", (0.004, 0.0045, 0.0005), (0.04 + 0.004 * (k % 2), -d / 2 + 0.006 + 0.0045 * (k // 2 * 2 + k % 2) / 1.0, 0.0163), kerb[1] if k % 2 else M("grid_b", "#141416", 0.6), hot="cars", parent=root)
+    porsche("car", (-0.06, -d / 2 + 0.019, 0.016), 180 - 4, "#c8ccd1", hot="cars", scale=0.8).parent = root
 
 
 def build_left():
@@ -236,10 +234,10 @@ def build_left():
     torus("hp_cable", 0.11, 0.004, (-1.06, 0.14, T + 0.004), M("cable", "#17181c"), rot=(0, 0, R(200)), arc=math.pi * 1.2, seg=28, sub=6)
     # 马克杯
     mx, my = -1.12, -0.02
-    cyl("mug", 0.047, 0.095, (mx, my, T + 0.0475), M("mug", "#ffffff", 0.4), hot="friends")
-    cyl("mug_band", 0.0475, 0.02, (mx, my, T + 0.07), M("mug_band", "#2b6be4", 0.4), hot="friends")
-    cyl("mug_coffee", 0.040, 0.004, (mx, my, T + 0.094), M("coffee", "#4a2c1a", 0.3), hot="friends")
-    torus("mug_handle", 0.03, 0.009, (mx - 0.05, my + 0.01, T + 0.05), M("mug", "#ffffff"), rot=(math.pi / 2, 0, R(160)), seg=20, sub=8, hot="friends")
+    cyl("mug", 0.047, 0.095, (mx, my, T + 0.0475), M("mug", "#ffffff", 0.4))
+    cyl("mug_band", 0.0475, 0.02, (mx, my, T + 0.07), M("mug_band", "#2b6be4", 0.4))
+    cyl("mug_coffee", 0.040, 0.004, (mx, my, T + 0.094), M("coffee", "#4a2c1a", 0.3))
+    torus("mug_handle", 0.03, 0.009, (mx - 0.05, my + 0.01, T + 0.05), M("mug", "#ffffff"), rot=(math.pi / 2, 0, R(160)), seg=20, sub=8)
     # 唱片：从封套里抽出来一半，点开是黑胶播放器
     sx, sy, vx, vy = -0.968, -0.06, -0.923, -0.03
     box("vinyl_sleeve", (0.18, 0.18, 0.004), (sx, sy, T + 0.004), M("vinyl_sleeve", "#8e4ec6", 0.7), rot=(0, 0, R(8)), hot="music")
@@ -254,12 +252,31 @@ def build_left():
     # 报纸（新闻）+ 项目一的刊物
     decal("newspaper", 0.25, 0.327, (-1.05, -0.34), "newspaper.png", yaw=11, hot="news", thick=0.007, edge="#e8e2d0")
     decal("zine_echo", 0.205, 0.28, (-0.70, -0.37), "zine_echo.png", yaw=-7, hot="zine-1", thick=0.006)
+    # 两张电影票根（喜欢的电影和剧）
+    decal("ticket_a", 0.13, 0.055, (-0.50, -0.42), "ticket_0.png", yaw=9, hot="movies", thick=0.0006, edge="#f2e6c8")
+    decal("ticket_b", 0.13, 0.055, (-0.47, -0.36), "ticket_1.png", yaw=-14, z=0.0012, hot="movies", thick=0.0006, edge="#f2e6c8")
     # 工牌（工作 / 实习）
     bx, by, yaw = -0.14, 0.07, 14
     box("badge", (0.075, 0.105, 0.004), (bx, by, T + 0.004), M("badge", "#ffffff", 0.5), rot=(0, 0, R(yaw)), hot="badge")
     box("badge_head", (0.075, 0.03, 0.001), (bx - 0.009, by + 0.036, T + 0.0066), M("badge_head", "#111216", 0.5), rot=(0, 0, R(yaw)), hot="badge")
     box("badge_photo", (0.034, 0.038, 0.001), (bx + 0.003, by - 0.012, T + 0.0066), M("badge_photo", "#bfe6ff", 0.5), rot=(0, 0, R(yaw)), hot="badge")
     torus("badge_strap", 0.055, 0.004, (bx - 0.025, by + 0.10, T + 0.005), M("strap", "#2b6be4", 0.6), hot="badge", seg=28, sub=6).scale = (0.8, 1.0, 1.0)
+
+
+def cat(cx, cy, yaw):
+    """一只团着睡觉的美国短毛猫：椭球身子、埋在前爪上的头、两只耳朵、绕到前面的尾巴，背上几道深色虎斑。"""
+    fur, dark, pink = M("cat_fur", "#b9bcc1", 0.8), M("cat_stripe", "#4b4e55", 0.8), M("cat_pink", "#e8a0a8", 0.6)
+    root = empty("cat_root", (cx, cy, T), (0, 0, yaw))
+    root.scale = (1.3, 1.3, 1.3)
+    ball("cat_body", 1.0, (0, 0, 0.0), fur, scale=(0.078, 0.058, 0.048), half=True, hot="cat", parent=root)
+    ball("cat_head", 0.036, (-0.072, -0.024, 0.040), fur, scale=(1.0, 1.05, 0.85), hot="cat", parent=root)
+    for s_ in (-1, 1):
+        cyl(f"cat_ear{s_}", 0.012, 0.022, (-0.078, -0.024 + s_ * 0.020, 0.074), fur, r2=0.001, rot=(s_ * R(-18), R(-10), 0), seg=12, hot="cat", parent=root)
+        cyl(f"cat_ear_in{s_}", 0.007, 0.014, (-0.081, -0.024 + s_ * 0.020, 0.073), pink, r2=0.0005, rot=(s_ * R(-18), R(-10), 0), seg=10, hot="cat", parent=root)
+    torus("cat_tail", 0.062, 0.010, (0.0, 0.0, 0.006), fur, rot=(0, 0, R(200)), arc=math.pi * 0.9, seg=24, sub=10, hot="cat", parent=root)
+    for k, x in enumerate((-0.03, -0.005, 0.02, 0.045)):   # 背上的虎斑：贴着身子的几道细弧
+        torus(f"cat_stripe{k}", 0.052 - abs(x) * 0.35, 0.0045, (x, 0, 0.0), dark, rot=(0, R(90), 0), arc=math.pi, seg=20, sub=6, hot="cat", parent=root).scale = (1.0, 1.08, 0.88)
+    ball("cat_nose", 0.005, (-0.106, -0.026, 0.036), pink, hot="cat", parent=root)
 
 
 def build_center():
@@ -270,16 +287,8 @@ def build_center():
         x = px - 0.084 + i * 0.024
         tip = (x + rng.uniform(-0.012, 0.012), py + rng.uniform(0.0, 0.03), T + 0.17 + rng.uniform(-0.01, 0.02))
         rod(f"pen{i}", (x, py, T + 0.04), tip, 0.008, M(f"pen{i}", col, 0.4), seg=10)
-    # 声波圆台：点击打开项目一
-    ex, ey = 0.32, 0.26
-    cyl("echo_puck", 0.088, 0.045, (ex, ey, T + 0.0225), M("puck", "#18181b", 0.35), seg=56, hot="zine-1")
-    torus("echo_ring", 0.082, 0.006, (ex, ey, T + 0.012), M("puck_ring", "#ff7a3d", 0.3, emit=4.0), hot="zine-1", seg=56, sub=8)
-    bar = M("puck_bar", "#ffffff", 0.3, emit=3.0)
-    for dx, ln in ((-0.03, 0.045), (0.0, 0.086), (0.03, 0.06)):
-        box(f"echo_bar{dx:+.2f}", (0.016, ln, 0.004), (ex + dx, ey, T + 0.047), bar, hot="zine-1")
-        for s in (-1, 1):
-            cyl(f"echo_cap{dx:+.2f}{s}", 0.008, 0.004, (ex + dx, ey + s * ln / 2, T + 0.047), bar, seg=16, hot="zine-1")
-    light("puck_light", "POINT", "rgb", 1.5, "#ff9a5a", (ex, ey, T + 0.12), size=0.1)
+    # 美短：银色虎斑，团成一团睡在笔架旁边
+    cat(0.33, 0.25, R(-25))
     # 蜘蛛面具：点它切换宇宙（致敬参考站）
     mx, my = 0.10, 0.05
     root = empty("mask_root", (mx, my, T + 0.002), (R(-14), 0, R(-10)))
@@ -302,24 +311,37 @@ def build_center():
     rod("nb_pen", (-0.02, -0.46, T + 0.022), (0.13, -0.36, T + 0.022), 0.006, M("nb_pen", "#e5484d", 0.4))
     # 手柄
     gx, gy, gm = 0.20, -0.38, M("pad", "#f4f1ea", 0.5)
-    box("pad_body", (0.11, 0.055, 0.03), (gx, gy, T + 0.018), gm, rot=(0, 0, R(-12)), hot="projects")
+    box("pad_body", (0.11, 0.055, 0.03), (gx, gy, T + 0.018), gm, rot=(0, 0, R(-12)), hot="games")
     for s in (-1, 1):
-        ball(f"pad_grip{s}", 0.04, (gx + s * 0.058, gy - 0.012 - s * 0.012, T + 0.02), gm, scale=(0.9, 1.25, 0.6), rot=(0, 0, R(-12)), hot="projects")
-        cyl(f"pad_stick{s}", 0.011, 0.012, (gx + s * 0.028, gy - 0.004 - s * 0.006, T + 0.038), M("pad_stick", "#22242a"), seg=14, hot="projects")
+        ball(f"pad_grip{s}", 0.04, (gx + s * 0.058, gy - 0.012 - s * 0.012, T + 0.02), gm, scale=(0.9, 1.25, 0.6), rot=(0, 0, R(-12)), hot="games")
+        cyl(f"pad_stick{s}", 0.011, 0.012, (gx + s * 0.028, gy - 0.004 - s * 0.006, T + 0.038), M("pad_stick", "#22242a"), seg=14, hot="games")
     for i, col in enumerate(("#e5484d", "#2b6be4", "#f5b301", "#30a46c")):
         a = i * math.pi / 2
-        cyl(f"pad_btn{i}", 0.006, 0.006, (gx + 0.045 + math.cos(a) * 0.012, gy + 0.004 + math.sin(a) * 0.012, T + 0.035), M(f"pad_btn{i}", col, 0.3), seg=10, hot="projects")
+        cyl(f"pad_btn{i}", 0.006, 0.006, (gx + 0.045 + math.cos(a) * 0.012, gy + 0.004 + math.sin(a) * 0.012, T + 0.035), M(f"pad_btn{i}", col, 0.3), seg=10, hot="games")
 
 
 def build_right():
-    # 奖杯：一只金杯 + 一只小银杯
-    gold, silver, base = M("gold", "#f5b301", 0.25, metal=0.9), M("silver", "#c9ccd2", 0.3, metal=0.6), M("trophy_base", "#3b2a20", 0.5)
-    for name, (tx, ty), s, mat in (("gold", (0.64, 0.36), 1.0, gold), ("silver", (0.80, 0.30), 0.72, silver)):
-        box(f"tr_base_{name}", (0.11 * s, 0.11 * s, 0.045 * s), (tx, ty, T + 0.0225 * s), base, hot="trophy")
-        cyl(f"tr_stem_{name}", 0.014 * s, 0.08 * s, (tx, ty, T + 0.085 * s), mat, r2=0.028 * s, seg=20, hot="trophy")
-        cyl(f"tr_cup_{name}", 0.032 * s, 0.11 * s, (tx, ty, T + 0.18 * s), mat, r2=0.07 * s, hot="trophy")
-        for sd in (-1, 1):
-            torus(f"tr_handle_{name}{sd}", 0.036 * s, 0.007 * s, (tx + sd * 0.064 * s, ty, T + 0.185 * s), mat, rot=(math.pi / 2, 0, 0), hot="trophy", seg=20, sub=8)
+    # 台历（年度回顾）：A 字形立在桌上，正面是年历
+    croot = empty("cal_root", (0.68, 0.35, T), (0, 0, R(-12)))
+    lean = R(22)
+    board_mat = M("cal_board", "#2b2d33", 0.6)
+    for k, sgn in enumerate((-1, 1)):
+        box(f"cal_side{k}", (0.17, 0.004, 0.13), (0, sgn * 0.024, 0.062), board_mat, rot=(sgn * lean, 0, 0), hot="calendar", parent=croot)
+    plane("cal_face", 0.162, 0.122, (0, -0.0265, 0.064), tex("calendar.png", rough=0.8), rot=(-lean, 0, 0), hot="calendar", parent=croot)
+    for k in range(7):
+        torus(f"cal_ring{k}", 0.006, 0.0012, (-0.06 + k * 0.02, 0, 0.126), M("silver", "#c9ccd2", 0.3, metal=0.6), rot=(0, math.pi / 2, 0), seg=14, sub=6, hot="calendar", parent=croot)
+    # 地球仪（去过、住过的地方）：台灯照着的那块桌面
+    gx_, gy_ = 0.73, 0.12
+    cyl("globe_base", 0.038, 0.012, (gx_, gy_, T + 0.006), M("globe_base", "#3b2a20", 0.5), hot="globe")
+    rod("globe_post", (gx_, gy_, T + 0.012), (gx_, gy_ + 0.01, T + 0.05), 0.004, M("brass", "#c9a24a", 0.3, metal=0.8), hot="globe")
+    groot = empty("globe_root", (gx_, gy_, T + 0.118), (R(23), 0, R(-30)))
+    ball("globe_sea", 0.062, (0, 0, 0), M("globe_sea", "#2b6be4", 0.35), hot="globe", parent=groot)
+    land = M("globe_land", "#5fbf6a", 0.6)
+    for k, (lon, lat, s_) in enumerate(((20, 20, 0.030), (60, 45, 0.034), (110, 30, 0.026), (-80, 35, 0.030), (-60, -20, 0.022), (135, -25, 0.018), (10, -5, 0.022), (90, 60, 0.024))):
+        lo, la = R(lon), R(lat)
+        n = Vector((math.cos(la) * math.cos(lo), math.cos(la) * math.sin(lo), math.sin(la)))
+        ball(f"globe_land{k}", 1.0, n * 0.058, land, scale=(s_, s_ * 0.8, 0.008), rot=n.to_track_quat("Z", "Y").to_euler(), hot="globe", parent=groot)
+    torus("globe_meridian", 0.070, 0.0028, (0, 0, 0), M("brass", "#c9a24a", 0.3, metal=0.8), rot=(math.pi / 2, 0, 0), arc=math.pi * 1.25, seg=36, sub=6, hot="globe", parent=groot)
     # 台灯
     white = M("lamp", "#f4f1ea", 0.4)
     cyl("lamp_base", 0.075, 0.016, (1.02, 0.42, T + 0.008), white)
@@ -342,18 +364,22 @@ def build_right():
         for k in range(5):
             a = k * math.tau / 5 + s
             ball(f"shroom_dot{s}{k}", 0.011 * s, (hx + dx + math.cos(a) * 0.034 * s, hy + dy + math.sin(a) * 0.034 * s, T + 0.09 + 0.136 * s), M("shroom_dot", "#ffffff", 0.5), scale=(1, 1, 0.5), hot="plant")
-    # 小圆桌模型（项目二）
-    rx, ry = 0.98, 0.02
-    wood = M("rt_wood", "#7a4b2a", 0.5)
-    cyl("rt_foot", 0.06, 0.01, (rx, ry, T + 0.005), wood, hot="table-model")
-    cyl("rt_leg", 0.016, 0.07, (rx, ry, T + 0.04), wood, seg=16, hot="table-model")
-    cyl("rt_top", 0.125, 0.016, (rx, ry, T + 0.083), M("rt_top", "#f4e3c1", 0.5), seg=48, hot="table-model")
-    cyl("rt_inlay", 0.058, 0.004, (rx, ry, T + 0.092), M("rt_inlay", "#2b6be4", 0.4), seg=32, hot="table-model")
-    for i, col in enumerate(("#e5484d", "#f5b301", "#30a46c", "#2b6be4", "#8e4ec6", "#ff7a3d")):
-        a = i * math.tau / 6 + 0.3
-        px, py, pm = rx + math.cos(a) * 0.095, ry + math.sin(a) * 0.095, M(f"pawn{i}", col, 0.4)
-        cyl(f"pawn_body{i}", 0.018, 0.045, (px, py, T + 0.113), pm, r2=0.01, seg=16, hot="table-model")
-        ball(f"pawn_head{i}", 0.015, (px, py, T + 0.146), pm, hot="table-model")
+    # 卡片盒（认知积累）：木盒里竖着一排索引卡，几张带彩色标签露出来；正面贴着标签
+    kroot = empty("cards_root", (0.98, 0.03, T), (0, 0, R(-8)))
+    wood_box = M("cards_wood", "#a0683c", 0.6)
+    bw, bd, bh = 0.15, 0.095, 0.055
+    box("cards_floor", (bw, bd, 0.006), (0, 0, 0.003), wood_box, hot="cards", parent=kroot)
+    for k, (sx, sy, x, y) in enumerate(((bw, 0.006, 0, -bd / 2), (bw, 0.006, 0, bd / 2), (0.006, bd, -bw / 2, 0), (0.006, bd, bw / 2, 0))):
+        box(f"cards_wall{k}", (sx, sy, bh), (x, y, bh / 2), wood_box, hot="cards", parent=kroot)
+    plane("cards_label", 0.12, 0.04, (0, -bd / 2 - 0.0035, bh * 0.55), tex("cards_label.png", rough=0.8), hot="cards", parent=kroot)
+    paper_ = M("cards_paper", "#fbf8ef", 0.8)
+    tabs = [M("tab_r", "#e5484d", 0.6), M("tab_y", "#f5b301", 0.6), M("tab_b", "#2b6be4", 0.6), M("tab_g", "#30a46c", 0.6)]
+    for k in range(13):
+        x = -bw / 2 + 0.014 + k * 0.0095
+        h = bh + 0.012 + (0.01 if k % 4 == 1 else 0.0)
+        box(f"card{k}", (0.0016, bd - 0.016, h), (x, 0, h / 2 + 0.004), paper_, rot=(0, R(-6 + (k % 3) * 2), 0), hot="cards", parent=kroot)
+        if k % 3 == 0:
+            box(f"card_tab{k}", (0.002, 0.018, 0.012), (x, -0.02 + (k % 2) * 0.03, h + 0.008), tabs[(k // 3) % 4], rot=(0, R(-6 + (k % 3) * 2), 0), hot="cards", parent=kroot)
     # 刊物三本，扇形摊开
     decal("zine_roundtable", 0.205, 0.28, (0.50, -0.05), "zine_roundtable.png", yaw=-13, hot="zine-2", thick=0.006)
     decal("zine_athena", 0.205, 0.28, (0.71, -0.17), "zine_athena.png", yaw=9, hot="zine-3", thick=0.006, z=0.008)
@@ -412,7 +438,7 @@ def build(scene):
     build_wall_stuff()
     build_desk()
     build_monitor()
-    build_skyline()
+    build_track()
     build_left()
     build_center()
     build_right()

@@ -1,8 +1,7 @@
 # /// script
 # dependencies = ["numpy", "pillow", "opencv-python-headless"]
 # ///
-"""场景里所有“印刷品”的贴图：软木板、剪报、海报、项目刊物、笔记本、屏幕、砖墙、木纹、楼体；
-和 3D 贡献城的网格 + 底座铭牌（skyline.json / skyline_label.png，从 site/assets/data/github.json 转出来）。
+"""场景里所有“印刷品”的贴图：软木板、剪报、海报、项目刊物、笔记本、屏幕、台历、电影票、卡片盒标签、砖墙、木纹、楼体。
 
 用法：uv run pipeline/textures.py blender/tex
 桌上和墙上的字都在这里；标了 TODO 的是占位。改完重跑 Blender。
@@ -217,17 +216,17 @@ def board(w=2400, h=1176):
     name = card(560, 360, (255, 252, 244), border=10, seed=5)
     nd = ImageDraw.Draw(name)
     nd.rectangle((22, 22, 537, 337), outline=INK, width=2)
-    nd.text((280, 118), "ZIHAO", font=fit(nd, "ZIHAO", "black", 500, 138), fill=INK, anchor="mm")
-    nd.text((280, 214), "Z I H A O   X U", font=font("din", 46), fill=INK, anchor="mm")   # TODO：中文名，用 font("cjk", 46)
-    nd.rectangle((60, 250, 500, 253), fill=INK)
-    nd.text((280, 282), "YOUR TAGLINE HERE", font=font("din", 40), fill=RED, anchor="mm")   # TODO
+    nd.text((280, 122), "许子豪", font=font("cjk", 128), fill=INK, anchor="mm")
+    nd.text((280, 220), "Z I H A O   X U", font=font("din", 46), fill=INK, anchor="mm")
+    nd.rectangle((60, 252, 500, 255), fill=INK)
+    nd.text((280, 284), "知 行 合 一", font=font("cjk", 34), fill=RED, anchor="mm")
     nd.text((280, 320), "SCHOOL · CITY", font=font("mono", 19), fill=INK, anchor="mm")   # TODO
     stick(im, name, (1160, 470), -1.5)
 
     # 拍立得
     stick(im, polaroid("bars", "project one", 11), (250, 250), -7)
     stick(im, polaroid("city", "my city", 12), (590, 230), 5)
-    stick(im, polaroid("cup", "a prize", 13, size=250), (700, 560), -4)
+    stick(im, polaroid("city", "on the road", 13, size=250), (700, 560), -4)
 
     # 便签
     def sticky(text, col, size, fs, name_="marker", fill=INK):
@@ -237,10 +236,12 @@ def board(w=2400, h=1176):
 
     stick(im, sticky("NOW:\nwhat I'm\nworking on\n(TODO)", YELLOW, (330, 250), 40), (250, 640), 4)
     stick(im, sticky("2025 - SCHOOL\n2026 - INTERN\n2026 - BUILDING\n       THINGS\n(TODO)", (196, 228, 255), (320, 230), 27, "mono"), (410, 930), -3)
-    stick(im, sticky("STAY CURIOUS.\nKEEP BUILDING.", PINK, (330, 170), 36), (1010, 800), 3)
+    motto = card(330, 170, PINK, seed=36)
+    ImageDraw.Draw(motto).text((165, 85), "知行合一", font=font("cjk", 72), fill=INK, anchor="mm")
+    stick(im, motto, (1010, 800), 3)
     tag = card(300, 78, (88, 214, 141), seed=9)
     td = ImageDraw.Draw(tag)
-    td.text((150, 39), "OPEN TO WORK", font=fit(td, "OPEN TO WORK", "impact", 270, 46), fill=INK, anchor="mm")
+    td.text((150, 39), "LIGHTS OUT!", font=fit(td, "LIGHTS OUT!", "impact", 270, 46), fill=INK, anchor="mm")
     stick(im, tag, (1340, 760), -5)
 
     # WHAT I CAN BUILD
@@ -337,20 +338,102 @@ def clipping(headline, sub, kind, seed, text, w=640, h=820, masthead="THE DAILY 
     return im
 
 
+def f1_car(d, x, y, L, body, accent, trim):
+    """侧视的 F1 赛车剪影：车头朝右，(x, y) 是左后轮落地点，L 是车长。不画任何车队标志。"""
+    u = L / 100
+    def P(pts):
+        return [(x + a * u, y - b * u) for a, b in pts]
+    d.polygon(P(((4, 6), (4, 22), (12, 22), (16, 14), (34, 15), (42, 24), (52, 26), (60, 20), (88, 13), (100, 9), (100, 5), (4, 5))), fill=body, outline=INK)
+    d.polygon(P(((0, 22), (0, 30), (12, 30), (12, 22))), fill=accent, outline=INK)          # 尾翼
+    d.polygon(P(((92, 4), (104, 4), (104, 8), (92, 8))), fill=accent, outline=INK)           # 前翼
+    d.polygon(P(((44, 24), (50, 31), (56, 31), (58, 24))), fill=trim, outline=INK)          # 头盔
+    d.line(P(((40, 26), (53, 33), (62, 22))), fill=INK, width=max(2, int(u * 1.2)))         # halo
+    d.polygon(P(((24, 12), (60, 12), (64, 17), (28, 17))), fill=accent)                    # 侧箱上的色带
+    for cx, r in ((14, 10), (80, 9)):
+        d.ellipse((x + (cx - r) * u, y - 2 * r * u, x + (cx + r) * u, y), fill=INK)
+        d.ellipse((x + (cx - r * 0.45) * u, y - r * 1.45 * u, x + (cx + r * 0.45) * u, y - r * 0.55 * u), fill=(120, 124, 132))
+
+
 def poster(w=640, h=900):
-    im = paper(w, h, (240, 222, 178), grain=12, seed=77)
+    """墙上的海报：F1 主题，POLE TO WIN。深蓝底 + 红黄配色的车，致敬维斯塔潘，不用车队标志和本人照片。"""
+    navy = (14, 27, 64)
+    im = paper(w, h, navy, grain=10, seed=77)
     d = ImageDraw.Draw(im)
-    d.rectangle((18, 18, w - 19, h - 19), outline=INK, width=8)
-    d.text((w / 2, 112), "HIRE!", font=font("slab", 150), fill=INK, anchor="mm")
-    d.rectangle((40, 196, w - 40, 204), fill=INK)
-    d.text((w / 2, 244), "OPEN TO OPPORTUNITIES", font=fit(d, "OPEN TO OPPORTUNITIES", "impact", w - 90, 60), fill=RED, anchor="mm")
-    im.paste(halftone(w - 200, 330, 5, bg=(240, 222, 178), kind="person", image=avatar()), (100, 290))
-    d.rectangle((100, 290, w - 101, 620), outline=INK, width=5)
-    d.text((w / 2, 672), "ZIHAO XU", font=font("black", 74), fill=INK, anchor="mm")
-    d.text((w / 2, 742), "YOUR TAGLINE HERE", font=font("din", 54), fill=INK, anchor="mm")   # TODO
-    d.rectangle((40, 782, w - 40, 788), fill=INK)
-    d.text((w / 2, 832), "REWARD: SHIPPED PRODUCTS", font=fit(d, "REWARD: SHIPPED PRODUCTS", "impact", w - 90, 52), fill=RED, anchor="mm")
+    for k in range(10):   # 顶上的格子旗
+        for r in range(2):
+            if (k + r) % 2 == 0:
+                d.rectangle((18 + k * 60.4, 18 + r * 30, 18 + (k + 1) * 60.4, 48 + r * 30), fill=PAPER)
+    d.text((w / 2, 190), "POLE", font=font("impact", 170), fill=YELLOW, anchor="mm")
+    d.text((w / 2, 330), "TO WIN", font=fit(d, "TO WIN", "impact", w - 80, 130), fill=RED, anchor="mm")
+    for k in range(7):   # 速度线
+        yy = 470 + k * 16
+        d.line((40, yy, 40 + 120 + (k % 3) * 60, yy), fill=(90, 110, 170), width=4)
+    f1_car(d, 120, 600, 470, (30, 46, 110), RED, YELLOW)
+    d.rectangle((40, 612, w - 40, 618), fill=PAPER)
+    d.text((w / 2, 690), "P1", font=font("black", 92), fill=YELLOW, anchor="mm")
+    d.rectangle((40, 760, w - 40, 764), fill=PAPER)
+    d.text((w / 2, 808), "MAX VERSTAPPEN", font=fit(d, "MAX VERSTAPPEN", "din", w - 120, 54), fill=PAPER, anchor="mm")
+    d.text((w / 2, 856), "LIGHTS OUT AND AWAY WE GO", font=font("mono", 22), fill=(170, 184, 220), anchor="mm")
+    d.rectangle((18, 18, w - 19, h - 19), outline=PAPER, width=8)
     return im
+
+
+def calendar(w=1080, h=820, year=None):
+    """台历正面：年度回顾。上面一条年份，下面 12 个月的小格子，几个月份圈出来当“重要的事”。"""
+    year = year or date.today().year
+    im = paper(w, h, PAPER, grain=6, seed=81)
+    d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, w, 170), fill=RED)
+    d.text((40, 85), str(year), font=font("impact", 140), fill=PAPER, anchor="lm")
+    d.text((w - 40, 64), "YEAR IN", font=font("din", 56), fill=PAPER, anchor="rm")
+    d.text((w - 40, 122), "REVIEW", font=font("din", 56), fill=YELLOW, anchor="rm")
+    months = "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split()
+    cw, ch = (w - 80) / 4, (h - 220) / 3
+    for i, m in enumerate(months):
+        x0, y0 = 40 + (i % 4) * cw, 200 + (i // 4) * ch
+        d.rectangle((x0 + 6, y0 + 6, x0 + cw - 6, y0 + ch - 6), outline=(200, 194, 182), width=2)
+        d.text((x0 + 20, y0 + 16), m, font=font("din", 34), fill=INK)
+        for k in range(28):
+            gx, gy = x0 + 22 + (k % 7) * 30, y0 + 66 + (k // 7) * 26
+            d.rectangle((gx, gy, gx + 18, gy + 14), fill=(222, 216, 204))
+        if i in (1, 6, 9):   # TODO：换成你这一年里重要的月份
+            d.ellipse((x0 + 8, y0 + 4, x0 + 112, y0 + 62), outline=RED, width=5)
+    return im
+
+
+def ticket(title, sub, seed, accent, w=780, h=330):
+    """电影票根：左边主票，右边虚线撕口后面的副券。"""
+    im = card(w, h, (247, 236, 206), seed=seed)
+    d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, w, 54), fill=accent)
+    d.text((26, 27), "ADMIT ONE", font=font("din", 34), fill=PAPER, anchor="lm")
+    d.text((w - 26, 27), f"No. {seed:04d}", font=font("mono", 24), fill=PAPER, anchor="rm")
+    d.text((34, 140), title, font=fit(d, title, "impact", w - 270, 92), fill=INK, anchor="lm")
+    d.text((34, 222), sub, font=font("mono", 26), fill=(80, 76, 70), anchor="lm")
+    d.text((34, 278), "ROW 7 · SEAT 12", font=font("din", 28), fill=accent, anchor="lm")
+    for y in range(64, h, 22):
+        d.ellipse((w - 214, y, w - 206, y + 8), fill=(190, 178, 150))
+    d.text((w - 105, h / 2 + 20), "STUB", font=font("black", 40), fill=accent, anchor="mm")
+    return im
+
+
+def cards_label(w=720, h=240):
+    """卡片盒正面的标签：认知积累（播客和公众号）。"""
+    im = card(w, h, (240, 226, 196), border=6, seed=91)
+    d = ImageDraw.Draw(im)
+    d.rectangle((18, 18, w - 19, h - 19), outline=INK, width=3)
+    d.text((w / 2, 104), "认知积累", font=font("cjk", 104), fill=INK, anchor="mm")
+    d.text((w / 2, 190), "PODCASTS · 公众号", font=font("cjk", 34), fill=RED, anchor="mm")
+    return im
+
+
+def now_note(w=380, h=320):
+    """显示器旁边的 NOW 便签：最近在做 / 在学 / 在玩。"""
+    s = card(w, h, YELLOW, seed=44)
+    d = ImageDraw.Draw(s)
+    d.text((24, 16), "NOW", font=font("marker", 76), fill=RED)
+    lines_text(d, (26, 120), "doing: ...\nlearning: ...\nplaying: ...", "marker", 38)   # TODO
+    return s
 
 
 # ───────────────────────── 项目刊物（桌上的“漫画”） ─────────────────────────
@@ -598,44 +681,15 @@ def facade(seed, wall, w=512, h=1024, cols=10, rows=26):
     return im
 
 
-def skyline(src=ASSETS / "data" / "github.json"):
-    """GitHub 贡献墙「过去一年」那一段 → 桌上 3D 贡献城的网格（layout.py 照着建模）。
-
-    weeks 是一列一周、从旧到新，每列 7 格从周日到周六，和贡献墙一样；每格 [次数, 档位 0–4]，
-    第一周开头、最后一周末尾不在这一年里的格子是 null。数据来自 sync_github.py 写的快照。
-    """
-    doc = json.loads(src.read_text())
-    view = next(v for v in doc["views"] if v["id"] == "last")
-    lead = (date.fromisoformat(view["from"]).weekday() + 1) % 7       # 周日 = 0
-    cells = [None] * lead + [[c, int(lv)] for c, lv in zip(view["counts"], view["levels"])]
-    cells += [None] * (-len(cells) % 7)
-    return {"user": doc["user"], "from": view["from"], "to": view["to"], "total": view["total"], "max": max(view["counts"]),
-            "weeks": [cells[i:i + 7] for i in range(0, len(cells), 7)]}
-
-
-def skyline_label(sky, w=2400, h=110):
-    """贡献城底座正面那条：左边用户名，中间一行小字，右边是这座城建模用的那一年。底色和底座的材质一样。"""
-    im = Image.new("RGB", (w, h), (29, 31, 36))
-    d = ImageDraw.Draw(im)
-    span = " – ".join(f"{s[:4]}.{s[5:7]}" for s in (sky["from"], sky["to"]))
-    d.text((40, h / 2 + 4), f"@{sky['user']}", font=font("din", 84), fill=(236, 233, 226), anchor="lm")
-    d.text((w / 2, h / 2 + 2), f"{sky['total']:,} CONTRIBUTIONS", font=font("mono", 40), fill=(155, 233, 168), anchor="mm")
-    d.text((w - 40, h / 2 + 4), span, font=font("din", 84), fill=(236, 233, 226), anchor="rm")
-    return im
-
-
 def main(out):
     out.mkdir(parents=True, exist_ok=True)
-    sky = skyline()
-    (out / "skyline.json").write_text(json.dumps(sky, separators=(",", ":")))
-    skyline_label(sky).save(out / "skyline_label.png")
     board().save(out / "board.png")
     # TODO：墙上四张剪报，写你真实的经历（标题、副标题、配图类型、正文）
     clips = [
         ("FIRST PROJECT SHIPPED", "headline subtitle goes here", "notes", None,
          "CITY — Replace this clipping with something you did: a project you finished, a competition, a talk or a milestone. A few sentences in the style of a news story."),
-        ("A PRIZE WORTH PINNING", "competition · year", "cup", None,
-         "CITY — Write about an award, a scholarship or a competition result here. Keep it short and factual: what it was, what you built, and what happened."),
+        ("A YEAR IN REVIEW", "what this year taught me", "notes", None,
+         "CITY — A short look back: the places you went, what you learned and the moment you remember most from this year."),
         ("MEET ZIHAO XU", "student · builder · photographer", "person", avatar(),
          "CITY — A short profile: who you are, where you study or work, and what you care about. This sits next to the poster on the wall."),
         ("NEXT UP", "what I'm working on now", "podium", None,
@@ -653,6 +707,12 @@ def main(out):
     screen().save(out / "screen.png")
     phone().save(out / "phone.png")
     small_papers(out)
+    now_note().save(out / "now.png")
+    calendar().save(out / "calendar.png")
+    cards_label().save(out / "cards_label.png")
+    # TODO：两张电影票根，写你喜欢的电影或剧
+    ticket("MOVIE ONE", "why I love it", 1, BLUE).save(out / "ticket_0.png")
+    ticket("MOVIE TWO", "why I love it", 2, RED).save(out / "ticket_1.png")
     newspaper().save(out / "newspaper.png")
     brick(w=3320, h=2200, bw=118, bh=44, gap=6).save(out / "brick.png")
     wood().save(out / "wood.png")
