@@ -7,7 +7,7 @@
 //   ... push private/journal               （把一个目录里的 <日期>.md 全部传上去）
 // 地址默认是线上的 Worker，本地调试时设 JOURNAL_API=http://localhost:8787。
 // 没设 JOURNAL_PASSWORD 时去 macOS 钥匙串取，在自己的电脑上存一次就不用再输：
-//   security add-generic-password -U -s evanlin-journal -a "$USER" -w
+//   security add-generic-password -U -s personal-site-journal -a "$USER" -w
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -15,7 +15,7 @@ import { pathToFileURL } from 'node:url';
 
 const DEFAULT_API = process.env.JOURNAL_API || '';   // 部署好 workers/api 后填它的地址，或设 JOURNAL_API
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const KEYCHAIN_SERVICE = 'evanlin-journal';
+const KEYCHAIN_SERVICE = 'personal-site-journal';
 
 /** 从 macOS 钥匙串读日记密码；不是 Mac、没存过或读不到都返回空串。 */
 export function keychainPassword(platform = process.platform, spawn = spawnSync) {
@@ -88,7 +88,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href && proxied && 
   process.exit(child.status ?? 1);
 } else if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const password = resolvePassword(process.env);
-  if (!password) { console.error('先设置 JOURNAL_PASSWORD 环境变量，或者存进钥匙串：security add-generic-password -U -s evanlin-journal -a "$USER" -w\n\n' + USAGE); process.exit(1); }
+  if (!password) { console.error('先设置 JOURNAL_PASSWORD 环境变量，或者存进钥匙串：security add-generic-password -U -s personal-site-journal -a "$USER" -w\n\n' + USAGE); process.exit(1); }
   run({ api: process.env.JOURNAL_API || DEFAULT_API, password }, parseArgs(process.argv.slice(2)))
     .then((text) => console.log(text))
     .catch((e) => { console.error(e.status === 401 ? '密码不对。' : e.status === 429 ? '试得太多，被暂时锁住了，过一会儿再来。' : e.message); process.exit(1); });

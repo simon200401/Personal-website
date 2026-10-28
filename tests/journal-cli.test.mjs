@@ -53,7 +53,7 @@ test('钥匙串：只在 macOS 上问 security，取不到就是空', () => {
   const asked = [];
   const spawn = (cmd, args) => { asked.push([cmd, ...args]); return { status: 0, stdout: 'pw\n' }; };
   assert.equal(keychainPassword('darwin', spawn), 'pw');
-  assert.deepEqual(asked, [['security', 'find-generic-password', '-s', 'evanlin-journal', '-w']]);
+  assert.deepEqual(asked, [['security', 'find-generic-password', '-s', 'personal-site-journal', '-w']]);
   assert.equal(keychainPassword('darwin', () => ({ status: 44, stdout: '' })), '');
   assert.equal(keychainPassword('darwin', () => ({ error: new Error('ENOENT') })), '');
   assert.equal(keychainPassword('linux', () => assert.fail('不该调用')), '');
