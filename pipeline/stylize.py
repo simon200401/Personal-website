@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["numpy", "pillow", "opencv-python-headless"]
+# dependencies = ["numpy", "pillow", "opencv-python-headless", "OpenEXR"]
 # ///
 """把 Blender 的分通道渲染合成 10 种印刷/漫画风格，并导出前端要用的热点图。
 
@@ -50,12 +50,24 @@ def dilate(m, r):
     return cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1)))
 
 
+def read_exr(path):
+    """读 EXR，返回和 cv2.imread 一样的 BGR float32。新版 opencv 的 pip 包常常不带 OpenEXR 支持，这时改用 OpenEXR 包读。"""
+    im = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    if im is not None:
+        return im
+    import OpenEXR
+    with OpenEXR.File(str(path)) as f:
+        ch = f.parts[0].channels
+        rgb = ch["RGB"].pixels if "RGB" in ch else np.dstack([ch[c].pixels for c in ("R", "G", "B")])
+    return np.ascontiguousarray(rgb[..., ::-1].astype(np.float32))
+
+
 class Ctx:
     """一次渲染的全部通道 + 常用派生量。s 是相对 1600 宽的缩放，所有像素尺寸都乘它。"""
 
     def __init__(self, src):
         src = Path(src)
-        rd = lambda n, flag=cv2.IMREAD_UNCHANGED: cv2.imread(str(src / n), flag)
+        rd = lambda n, flag=cv2.IMREAD_UNCHANGED: read_exr(src / n) if n.endswith(".exr") else cv2.imread(str(src / n), flag)
         self.A = rd("albedo.png")[..., ::-1].astype(np.float32) / 255
         self.E = rd("emit.png")[..., ::-1].astype(np.float32) / 255
         self.H, self.W = self.A.shape[:2]

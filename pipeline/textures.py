@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["numpy", "pillow", "opencv-python-headless"]
+# dependencies = ["numpy", "pillow", "opencv-python-headless", "global-land-mask"]
 # ///
 """场景里所有“印刷品”的贴图：软木板、剪报、海报、项目刊物、笔记本、屏幕、台历、电影票、卡片盒标签、砖墙、木纹、楼体。
 
@@ -427,6 +427,67 @@ def cards_label(w=720, h=240):
     return im
 
 
+def panamera_rear(w=1600, h=270, paint=(111, 107, 100)):
+    """帕拉梅拉车尾：上面一条贯穿尾灯，下面是 PORSCHE 字样，底色是车漆（火山灰）。"""
+    im = Image.new("RGB", (w, h), paint)
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((20, 30, w - 20, 74), radius=20, fill=(60, 8, 10))
+    d.rounded_rectangle((34, 40, w - 34, 64), radius=12, fill=(255, 52, 52))
+    for sx in (60, w - 260):   # 两端的灯组更亮更宽
+        d.rounded_rectangle((sx, 28, sx + 200, 78), radius=18, fill=(255, 70, 70))
+    d.text((w / 2, 168), "P O R S C H E", font=font("din", 76), fill=(30, 30, 34), anchor="mm")
+    d.text((w - 140, 236), "PANAMERA", font=font("din", 30), fill=(34, 34, 38), anchor="mm")
+    return im
+
+
+def earth(w=2048, h=1024):
+    """地球仪的贴图：等距圆柱投影，真实的海陆分布（global-land-mask 自带的 1 km 陆地掩膜），漫画配色；两极是冰。"""
+    from global_land_mask import globe
+    lat = np.linspace(90, -90, h)
+    lon = np.linspace(-180, 180, w, endpoint=False)
+    lo, la = np.meshgrid(lon, lat)
+    land = globe.is_land(la, lo)
+    im = np.empty((h, w, 3), np.uint8)
+    im[:] = (43, 107, 228)
+    im[land] = (95, 191, 106)
+    im[land & (np.abs(la) > 62) & (la < 0) | land & (la > 72)] = (244, 246, 250)
+    pic = Image.fromarray(im)
+    d = ImageDraw.Draw(pic)
+    for k in range(1, 12):   # 经纬线
+        d.line((k * w / 12, 0, k * w / 12, h), fill=(255, 255, 255), width=1)
+    for k in range(1, 6):
+        d.line((0, k * h / 6, w, k * h / 6), fill=(255, 255, 255), width=1)
+    return pic
+
+
+def tabby(w=1024, h=512):
+    """美短银色虎斑的身体贴图（UV 球：横向是绕竖轴一圈，纵向从下到上）。
+    背上是跨过脊背的一道道深色条纹，两侧腹各一个经典虎斑的“靶心”纹。"""
+    th = np.linspace(-np.pi, np.pi, w, endpoint=False)[None, :]
+    ph = np.linspace(np.pi / 2, -np.pi / 2, h)[:, None]
+    x, y, z = np.cos(ph) * np.cos(th), np.cos(ph) * np.sin(th), np.sin(ph)
+    im = np.empty((h, w, 3), np.float32)
+    im[:] = (185, 188, 193)
+    dark = np.zeros((h, w), bool)
+    for c in (-0.5, -0.22, 0.06, 0.34, 0.62):   # 跨过脊背的条纹：x 等于常数的等值线，只画背上那一段
+        dark |= (np.abs(x - c) < 0.035) & (z > 0.45)
+    for sy in (-1, 1):   # 侧腹靶心纹：以侧面一点为中心的一个圆环 + 中心圆点
+        cx, cy, cz = 0.1, sy * 0.88, 0.45
+        dist = np.arccos(np.clip((x * cx + y * cy + z * cz) / math.sqrt(cx * cx + cy * cy + cz * cz), -1, 1))
+        dark |= (np.abs(dist - 0.38) < 0.06) | (dist < 0.14)
+    im[dark] = (75, 78, 85)
+    return Image.fromarray(im.astype(np.uint8))
+
+
+def car_plaque(w=880, h=112):
+    """车模展台正面的铭牌。"""
+    im = Image.new("RGB", (w, h), (200, 202, 206))
+    d = ImageDraw.Draw(im)
+    d.rectangle((6, 6, w - 7, h - 7), outline=(40, 40, 44), width=3)
+    d.text((w / 2, h / 2 + 2), "PORSCHE PANAMERA · 2026 · VOLCANO GREY", font=fit(d, "PORSCHE PANAMERA · 2026 · VOLCANO GREY", "din", w - 60, 56), fill=(24, 24, 28), anchor="mm")
+    return im
+
+
 def now_note(w=380, h=320):
     """显示器旁边的 NOW 便签：最近在做 / 在学 / 在玩。"""
     s = card(w, h, YELLOW, seed=44)
@@ -708,6 +769,10 @@ def main(out):
     phone().save(out / "phone.png")
     small_papers(out)
     now_note().save(out / "now.png")
+    earth().save(out / "earth.png")
+    tabby().save(out / "tabby.png")
+    car_plaque().save(out / "car_plaque.png")
+    panamera_rear().save(out / "panamera_rear.png")
     calendar().save(out / "calendar.png")
     cards_label().save(out / "cards_label.png")
     # TODO：两张电影票根，写你喜欢的电影或剧

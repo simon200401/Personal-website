@@ -130,15 +130,17 @@ def build_wall_stuff():
         plane(f"wall_{name}", pw, ph, (px, WY - 0.004 - i * 0.0015, pz), tex(name + ".png", rough=0.9), rot=(0, R(tilt), 0), hot="press")
         box(f"tape_{name}", (0.05, 0.002, 0.018), (px, WY - 0.012 - i * 0.0015, pz + ph / 2 - 0.004), M("tape", "#f5e6a8", 0.7), rot=(0, R(tilt + 8), 0), hot="press")
 
-    # 声波霓虹装饰：挂在窗格上，背后是楼群
+    # 霓虹灯牌：名字首字母 Z，挂在窗格上，背后是楼群
     nx, nz = 1.64, 1.50
     cyl("neon_disc", 0.19, 0.02, (nx, WY - 0.012, nz), M("neon_disc", "#18181b", 0.4), rot=(math.pi / 2, 0, 0), seg=64)
-    glow = M("neon_bar", "#f4fbff", 0.3, emit=6.0)
-    for dx, bh in ((-0.07, 0.14), (0.0, 0.25), (0.07, 0.18)):
-        rod(f"neon_bar{dx:+.2f}", (nx + dx, WY - 0.04, nz - bh / 2), (nx + dx, WY - 0.04, nz + bh / 2), 0.019, glow, seg=20)
-        for s in (-1, 1):
-            ball(f"neon_cap{dx:+.2f}{s}", 0.019, (nx + dx, WY - 0.04, nz + s * bh / 2), glow)
-    light("neon_light", "POINT", "rgb", 4, "#dff3ff", (nx, WY - 0.22, nz), size=0.12)
+    glow = M("neon_bar", "#ff4a4a", 0.3, emit=6.0)
+    zw, zh = 0.085, 0.10
+    pts = [(nx - zw, nz + zh), (nx + zw, nz + zh), (nx - zw, nz - zh), (nx + zw, nz - zh)]
+    for k, ((x0, z0), (x1, z1)) in enumerate(zip(pts, pts[1:])):
+        rod(f"neon_bar{k}", (x0, WY - 0.04, z0), (x1, WY - 0.04, z1), 0.016, glow, seg=20)
+    for k, (x, z) in enumerate(pts):
+        ball(f"neon_cap{k}", 0.016, (x, WY - 0.04, z), glow)
+    light("neon_light", "POINT", "rgb", 4, "#ffb0b0", (nx, WY - 0.22, nz), size=0.12)
     # 贴墙灯带
     light("strip_L", "AREA", "rgb", 9, "#ff4fd8", (-1.0, WY - 0.07, 0.80), rot=(math.pi, 0, 0), size=1.3, size_y=0.04)
     light("strip_R", "AREA", "rgb", 8, "#3de0ff", (0.2, WY - 0.07, 0.80), rot=(math.pi, 0, 0), size=0.9, size_y=0.04)
@@ -185,45 +187,115 @@ def build_monitor():
     decal("sticky_b", 0.085, 0.071, (-0.40, 0.07), "sticky_0.png", yaw=7, hot="keyboard")
 
 
-def porsche(name, loc, yaw, paint, hot=None, scale=1.0):
-    """风格化的帕拉梅拉：长而低的四门轿跑，车顶从 A 柱一路溜到车尾，尾部一条贯穿尾灯。长约 0.125 m。"""
-    s = scale
+def _lerp(pts, x):
+    """分段线性插值：pts 是按 x 排好的 (x, y)。"""
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if x <= x1:
+            t = 0.0 if x1 == x0 else max(0.0, (x - x0) / (x1 - x0))
+            return y0 + (y1 - y0) * t
+    return pts[-1][1]
+
+
+# 帕拉梅拉（第三代，2024– 款）的外形，单位是真车的米，车头在 x = 0，车尾在 x = 5.05。
+# 数据：车长 5.052、车宽 1.937（不含后视镜）、车高 1.423、轴距 2.950、21 寸轮毂（轮胎外径约 0.74）。
+PANAMERA = {
+    "length": 5.05, "wheelbase": 2.95, "front_axle": 0.98, "tyre_r": 0.37, "track": 0.84,
+    "bottom": ((0.0, 0.34), (0.25, 0.22), (0.6, 0.15), (4.6, 0.15), (4.9, 0.28), (5.05, 0.40)),
+    # 腰线 / 发动机盖 / 尾部的高度：车头低，往后升到挡风玻璃底，再平到车尾，尾部略翘（隐藏式尾翼）
+    "belt": ((0.0, 0.52), (0.08, 0.66), (0.35, 0.74), (1.0, 0.82), (1.55, 0.90), (3.0, 0.93), (4.5, 0.97), (4.95, 1.00), (5.05, 0.90)),
+    # 车顶：挡风玻璃从 1.55 升到 2.3，车顶最高 1.423 在 2.7 左右，然后一路溜背到 4.85
+    "roof": ((1.55, 0.90), (1.9, 1.17), (2.3, 1.38), (2.7, 1.423), (3.2, 1.40), (3.8, 1.29), (4.4, 1.12), (4.85, 1.00)),
+    "half_w": ((0.0, 0.62), (0.15, 0.86), (0.6, 0.94), (1.0, 0.965), (2.4, 0.94), (3.9, 0.968), (4.6, 0.95), (4.95, 0.86), (5.05, 0.78)),
+    "glass": {"windscreen": (1.58, 2.28), "side": (1.75, 4.30), "rear": (3.85, 4.80)},
+}
+
+
+def porsche(name, loc, yaw, paint, hot=None, length=0.105):
+    """按真车比例放样的帕拉梅拉：沿车长取一圈圈截面（下车身圆角 + 收窄的车窗），连成一个网格。
+    车窗、四点式日行灯、贯穿尾灯、尾部 PORSCHE 字样、21 寸五辐轮毂都按真车位置放。"""
+    P = PANAMERA
+    k = length / P["length"]
     root = empty(name, loc, (0, 0, R(yaw)))
-    body, glass, tyre, rim = M(name + "_paint", paint, 0.25, metal=0.4), M("car_glass", "#1d2a38", 0.1), M("car_tyre", "#141416", 0.8), M("car_rim", "#c9ccd2", 0.3, metal=0.7)
-    head, tail = M("car_light", "#fff4d6", 0.2, emit=1.5), M("car_tail", "#e5484d", 0.3, emit=2.0)
-    # 车头朝 -X；下车身是圆角板，上面压一个拉长、重心偏后的半椭球当座舱和溜背
-    slab(name + "_floor", 0.125 * s, 0.048 * s, 0.018 * s, 0.016 * s, (0, 0, 0.016 * s), body, hot=hot).parent = root
-    ball(name + "_cabin", 1.0, (0.010 * s, 0, 0.024 * s), body, scale=(0.060 * s, 0.023 * s, 0.018 * s), half=True, hot=hot, parent=root)
-    ball(name + "_glass", 1.0, (0.004 * s, 0, 0.026 * s), glass, scale=(0.042 * s, 0.0225 * s, 0.0145 * s), half=True, hot=hot, parent=root)
-    box(name + "_pillar", (0.0035 * s, 0.0455 * s, 0.013 * s), (0.004 * s, 0, 0.033 * s), body, hot=hot, parent=root)   # B 柱：分出前后门的车窗
-    ball(name + "_hood", 1.0, (-0.036 * s, 0, 0.022 * s), body, scale=(0.030 * s, 0.022 * s, 0.007 * s), half=True, hot=hot, parent=root)
-    box(name + "_taillight", (0.002 * s, 0.044 * s, 0.003 * s), (0.0627 * s, 0, 0.022 * s), tail, hot=hot, parent=root)
-    for sx in (-1, 1):
+    body, glass = M(name + "_paint", paint, 0.22, metal=0.55), M("car_glass", "#141a22", 0.08)
+    tyre, rim, hub = M("car_tyre", "#141416", 0.85), M("car_rim", "#a7abb2", 0.25, metal=0.85), M("car_hub", "#2a2c31", 0.4, metal=0.5)
+    drl, tail_m, black = M("car_drl", "#f2f6ff", 0.2, emit=3.0), M("car_tail", "#ff2a2a", 0.3, emit=2.5), M("car_trim", "#101114", 0.35)
+
+    def X(x):   # 真车坐标 → 桌上：车头朝 -X，车身中点在原点
+        return (x - P["length"] / 2) * k
+
+    def ring(x):
+        zb, zbelt, hw = _lerp(P["bottom"], x), _lerp(P["belt"], x), _lerp(P["half_w"], x)
+        has_top = P["roof"][0][0] < x < P["roof"][-1][0]
+        ztop = _lerp(P["roof"], x) if has_top else zbelt + 0.02
+        gw0 = hw * 0.90 if has_top else hw * 0.80        # 车窗底边（腰线上沿往里收）
+        gw1 = hw * 0.68 if has_top else hw * 0.55        # 车顶边
+        if not has_top and x < 1.6:   # 发动机盖中间比两侧翼子板低，前脸看得出两条鼓起的轮拱
+            ztop = zbelt - 0.05
+        half = [(0.0, zb), (hw * 0.90, zb), (hw, zb + 0.10), (hw, zbelt - 0.12), (hw * 0.985, zbelt - 0.02), (gw0, zbelt + 0.01),
+                (gw1, ztop - 0.03 if has_top else zbelt - 0.02), (gw1 * 0.7, ztop - 0.008), (0.0, ztop)]
+        return half
+
+    xs = [0.0, 0.03, 0.08, 0.15, 0.25, 0.4, 0.6, 0.8, 1.0, 1.25, 1.5, 1.58, 1.75, 1.9, 2.1, 2.28, 2.5, 2.7, 2.9, 3.2, 3.5, 3.85, 4.1, 4.3, 4.5, 4.65, 4.8, 4.86, 4.95, 5.0, 5.05]
+    bm = bmesh.new()
+    rings = []
+    for x in xs:
+        half = ring(x)
+        pts = half + [(-y, z) for y, z in reversed(half[1:-1])]
+        rings.append([bm.verts.new((X(x), y * k, z * k)) for y, z in pts])
+    n = len(rings[0])
+    g = P["glass"]
+    for a in range(len(xs) - 1):
+        xm = (xs[a] + xs[a + 1]) / 2
+        for j in range(n):
+            f = bm.faces.new((rings[a][j], rings[a + 1][j], rings[a + 1][(j + 1) % n], rings[a][(j + 1) % n]))
+            f.smooth = True
+            band = j if j < 8 else (n - 1 - j)   # 右半边的面对应回左半边同一条带
+            side = band == 5 and g["side"][0] < xm < g["side"][1] and not (2.95 < xm < 3.05)   # 侧窗，中间留 B 柱
+            top = band in (6, 7) and (g["windscreen"][0] < xm < g["windscreen"][1] or g["rear"][0] < xm < g["rear"][1])
+            f.material_index = 1 if (side or top) else 0
+    bm.faces.new(list(reversed(rings[0])))
+    bm.faces.new(rings[-1])
+    ob = add(name + "_body", bm, body, hot=hot, parent=root)
+    ob.data.materials.append(glass)
+
+    zw = P["tyre_r"] * k
+    for ax in (P["front_axle"], P["front_axle"] + P["wheelbase"]):
+        hw = _lerp(P["half_w"], ax)
         for sy in (-1, 1):
-            x, y = (-0.040 if sx < 0 else 0.038) * s, sy * 0.023 * s
-            cyl(f"{name}_tyre{sx}{sy}", 0.012 * s, 0.009 * s, (x, y, 0.012 * s), tyre, rot=(math.pi / 2, 0, 0), seg=20, hot=hot, parent=root)
-            cyl(f"{name}_rim{sx}{sy}", 0.0075 * s, 0.0095 * s, (x, y, 0.012 * s), rim, rot=(math.pi / 2, 0, 0), seg=16, hot=hot, parent=root)
-        ball(f"{name}_lamp{sx}", 0.005 * s, (-0.060 * s, sx * 0.016 * s, 0.021 * s), head, scale=(0.6, 1.3, 0.8), hot=hot, parent=root)
+            y = sy * (hw - 0.10) * k
+            cyl(f"{name}_tyre{ax:.1f}{sy}", zw, 0.27 * k, (X(ax), y, zw), tyre, rot=(math.pi / 2, 0, 0), seg=28, hot=hot, parent=root)
+            yo = sy * (hw - 0.10 + 0.14) * k     # 轮毂外表面
+            cyl(f"{name}_rim{ax:.1f}{sy}", zw * 0.74, 0.01 * k, (X(ax), yo, zw), hub, rot=(math.pi / 2, 0, 0), seg=28, hot=hot, parent=root)
+            for sp in range(5):   # 五辐
+                a = sp * math.tau / 5
+                box(f"{name}_spoke{ax:.1f}{sy}{sp}", (0.11 * k, 0.012 * k, 0.26 * k), (X(ax) + math.sin(a) * 0.14 * k, yo + sy * 0.008 * k, zw + math.cos(a) * 0.14 * k), rim, rot=(0, a, 0), hot=hot, parent=root)
+            cyl(f"{name}_cap{ax:.1f}{sy}", zw * 0.16, 0.02 * k, (X(ax), yo + sy * 0.01 * k, zw), M("car_cap", "#c9a24a", 0.3, metal=0.8), rot=(math.pi / 2, 0, 0), seg=16, hot=hot, parent=root)
+    # 前大灯：深色灯罩里四个小方块（四点式日行灯）
+    for sy in (-1, 1):
+        hx, hy, hz = 0.30, sy * 0.70, 0.71   # 大灯趴在翼子板前端，往后上方斜
+        ball(f"{name}_headlamp{sy}", 1.0, (X(hx), hy * k, hz * k), black, scale=(0.24 * k, 0.17 * k, 0.07 * k), rot=(0, R(-14), sy * R(-12)), hot=hot, parent=root)
+        for q in range(4):
+            dy, dz = (q % 2 - 0.5) * 0.10, (q // 2 - 0.5) * 0.045
+            box(f"{name}_drl{sy}{q}", (0.08 * k, 0.06 * k, 0.025 * k), (X(hx - 0.06 - (q // 2) * 0.03), (hy + dy) * k, (hz + 0.035 + dz) * k), drl, rot=(0, R(-14), 0), hot=hot, parent=root)
+        box(f"{name}_mirror{sy}", (0.14 * k, 0.12 * k, 0.08 * k), (X(1.80), sy * 0.99 * k, 0.94 * k), body, hot=hot, parent=root)
+    # 进气口
+    box(f"{name}_intake", (0.04 * k, 1.1 * k, 0.16 * k), (X(0.02), 0, 0.42 * k), black, hot=hot, parent=root)
+    # 车尾：一整块贴图（贯穿尾灯 + PORSCHE 字样），朝 +X
+    tw = _lerp(P["half_w"], 5.05) * 2 * 0.92
+    plane(f"{name}_rear", tw * k, 0.24 * k, (X(5.05) + 0.0004, 0, 0.76 * k), tex("panamera_rear.png", rough=0.3), rot=(0, 0, math.pi / 2), hot=hot, parent=root)
     return root
 
 
 def build_track():
-    """显示器前面的迷你赛道：一块底座上铺一圈跑道，内圈是草，弯道有红白路肩；保时捷停在直道上。"""
-    root = empty("track_root", (-0.55, 0.17, T), (0, 0, R(4)))
-    w, d = 0.46, 0.15
-    slab("track_base", w + 0.02, d + 0.02, 0.012, 0.035, (0, 0, 0.006), M("track_base", "#1d1f24", 0.45), hot="cars").parent = root
-    slab("track_asphalt", w, d, 0.004, 0.072, (0, 0, 0.014), M("track_asphalt", "#3a3d45", 0.85), hot="cars").parent = root
-    slab("track_grass", w - 0.07, d - 0.07, 0.005, 0.036, (0, 0, 0.0155), M("track_grass", "#3f9a55", 0.9), hot="cars").parent = root
-    kerb = [M("kerb_r", "#e5484d", 0.6), M("kerb_w", "#f4f1ea", 0.6)]
-    for side in (-1, 1):   # 两个弯道外沿的红白路肩
-        cx = side * (w / 2 - 0.072)
-        for k in range(9):
-            a = R(-80 + 20 * k) if side > 0 else R(100 + 20 * k)
-            x, y = cx + math.cos(a) * 0.072, math.sin(a) * 0.072
-            box(f"kerb{side}{k}", (0.012, 0.006, 0.003), (x, y, 0.0175), kerb[k % 2], rot=(0, 0, a + math.pi / 2), hot="cars", parent=root)
-    for k in range(8):   # 起跑线的黑白格
-        box(f"grid{k}", (0.004, 0.0045, 0.0005), (0.04 + 0.004 * (k % 2), -d / 2 + 0.006 + 0.0045 * (k // 2 * 2 + k % 2) / 1.0, 0.0163), kerb[1] if k % 2 else M("grid_b", "#141416", 0.6), hot="cars", parent=root)
-    porsche("car", (-0.06, -d / 2 + 0.019, 0.016), 180 - 4, "#6f6b64", hot="cars", scale=0.75).parent = root   # 26 款帕拉梅拉，火山灰
+    """显示器前面的 1:24 车模：黑色亚克力展台，台面一条格子旗纹，正面铭牌；上面是 26 款帕拉梅拉，火山灰。"""
+    root = empty("track_root", (-0.55, 0.16, T), (0, 0, R(6)))
+    w, d, h = 0.27, 0.12, 0.022
+    slab("track_base", w, d, h, 0.012, (0, 0, h / 2), M("track_base", "#16171b", 0.2), hot="cars").parent = root
+    slab("track_top", w - 0.012, d - 0.012, 0.002, 0.008, (0, 0, h + 0.001), M("track_asphalt", "#3a3d45", 0.85), hot="cars").parent = root
+    for k in range(24):   # 台面后沿一条格子旗纹
+        box(f"grid{k}", (0.0105, 0.006, 0.0006), (-w / 2 + 0.012 + k * 0.0105, d / 2 - 0.014 + 0.006 * (k % 2), h + 0.0023), M("kerb_w", "#f4f1ea", 0.6), hot="cars", parent=root)
+    plane("track_plaque", 0.11, 0.014, (0, -d / 2 - 0.0006, h / 2), tex("car_plaque.png", rough=0.4), hot="cars", parent=root)
+    porsche("car", (0, -0.004, h + 0.002), 180 - 8, "#6f6b64", hot="cars", length=0.21).parent = root   # 1:24，车长 21 cm
 
 
 def build_left():
@@ -270,14 +342,23 @@ def cat(cx, cy, yaw):
     fur, dark, pink = M("cat_fur", "#b9bcc1", 0.8), M("cat_stripe", "#4b4e55", 0.8), M("cat_pink", "#e8a0a8", 0.6)
     root = empty("cat_root", (cx, cy, T), (0, 0, yaw))
     root.scale = (1.3, 1.3, 1.3)
-    ball("cat_body", 1.0, (0, 0, 0.0), fur, scale=(0.078, 0.058, 0.048), half=True, hot="cat", parent=root)
+    bm = bmesh.new()   # 身子用带 UV 的球，虎斑纹画在贴图里（textures.py 的 tabby），分开的条纹物体在漫画描边里会变成一根根黑刺
+    bm.loops.layers.uv.verify()
+    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0, calc_uvs=True)
+    bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, 0), plane_no=(0, 0, -1), clear_outer=True)
+    bmesh.ops.holes_fill(bm, edges=bm.edges)
+    bmesh.ops.scale(bm, vec=(0.078, 0.058, 0.048), verts=bm.verts)
+    for f in bm.faces:
+        f.smooth = True
+    add("cat_body", bm, tex("tabby.png", rough=0.8), hot="cat", parent=root)
     ball("cat_head", 0.036, (-0.072, -0.024, 0.040), fur, scale=(1.0, 1.05, 0.85), hot="cat", parent=root)
     for s_ in (-1, 1):
         cyl(f"cat_ear{s_}", 0.012, 0.022, (-0.078, -0.024 + s_ * 0.020, 0.074), fur, r2=0.001, rot=(s_ * R(-18), R(-10), 0), seg=12, hot="cat", parent=root)
         cyl(f"cat_ear_in{s_}", 0.007, 0.014, (-0.081, -0.024 + s_ * 0.020, 0.073), pink, r2=0.0005, rot=(s_ * R(-18), R(-10), 0), seg=10, hot="cat", parent=root)
     torus("cat_tail", 0.062, 0.010, (0.0, 0.0, 0.006), fur, rot=(0, 0, R(200)), arc=math.pi * 0.9, seg=24, sub=10, hot="cat", parent=root)
-    for k, x in enumerate((-0.03, -0.005, 0.02, 0.045)):   # 背上的虎斑：贴着身子的几道细弧
-        torus(f"cat_stripe{k}", 0.052 - abs(x) * 0.35, 0.0045, (x, 0, 0.0), dark, rot=(0, R(90), 0), arc=math.pi, seg=20, sub=6, hot="cat", parent=root).scale = (1.0, 1.08, 0.88)
+    for s_ in (-1, 1):   # 闭着的眼睛
+        torus(f"cat_eye{s_}", 0.007, 0.0012, (-0.104, -0.024 + s_ * 0.013, 0.050), dark, rot=(-math.pi / 2, 0, math.pi / 2), arc=math.pi, seg=10, sub=4, hot="cat", parent=root)
+    ball("cat_muzzle", 0.014, (-0.100, -0.026, 0.032), M("cat_white", "#e9e7e2", 0.8), scale=(0.7, 1.2, 0.8), hot="cat", parent=root)
     ball("cat_nose", 0.005, (-0.106, -0.026, 0.036), pink, hot="cat", parent=root)
 
 
@@ -337,12 +418,12 @@ def build_right():
     cyl("globe_base", 0.038, 0.012, (gx_, gy_, T + 0.006), M("globe_base", "#3b2a20", 0.5), hot="globe")
     rod("globe_post", (gx_, gy_, T + 0.012), (gx_, gy_ + 0.01, T + 0.05), 0.004, M("brass", "#c9a24a", 0.3, metal=0.8), hot="globe")
     groot = empty("globe_root", (gx_, gy_, T + 0.118), (R(23), 0, R(-30)))
-    ball("globe_sea", 0.062, (0, 0, 0), M("globe_sea", "#2b6be4", 0.35), hot="globe", parent=groot)
-    land = M("globe_land", "#5fbf6a", 0.6)
-    for k, (lon, lat, s_) in enumerate(((20, 20, 0.030), (60, 45, 0.034), (110, 30, 0.026), (-80, 35, 0.030), (-60, -20, 0.022), (135, -25, 0.018), (10, -5, 0.022), (90, 60, 0.024))):
-        lo, la = R(lon), R(lat)
-        n = Vector((math.cos(la) * math.cos(lo), math.cos(la) * math.sin(lo), math.sin(la)))
-        ball(f"globe_land{k}", 1.0, n * 0.058, land, scale=(s_, s_ * 0.8, 0.008), rot=n.to_track_quat("Z", "Y").to_euler(), hot="globe", parent=groot)
+    bm = bmesh.new()
+    bm.loops.layers.uv.verify()
+    bmesh.ops.create_uvsphere(bm, u_segments=64, v_segments=32, radius=0.062, calc_uvs=True)
+    for f in bm.faces:
+        f.smooth = True
+    add("globe_earth", bm, tex("earth.png", rough=0.35), hot="globe", parent=groot)
     torus("globe_meridian", 0.070, 0.0028, (0, 0, 0), M("brass", "#c9a24a", 0.3, metal=0.8), rot=(math.pi / 2, 0, 0), arc=math.pi * 1.25, seg=36, sub=6, hot="globe", parent=groot)
     # 台灯
     white = M("lamp", "#f4f1ea", 0.4)
