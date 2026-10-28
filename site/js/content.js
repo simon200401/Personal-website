@@ -244,13 +244,22 @@ export const DYNAMIC = {
   photos: { file: 'photos', kicker: L('PHOTOGRAPHY', 'PHOTOGRAPHY'), title: L('摄影', 'Photography'), sub: L('一组一组地看：点封面，翻开整个合集', 'In collections: open a cover to see the whole set') },
   news: { file: 'news', kicker: L('AI DAILY', 'AI DAILY'), title: L('新闻', 'News desk'), sub: L('AI · 研究 · 行业 · 国际', 'AI · Research · Industry · Global') },
   friends: { file: 'friends', kicker: L('FRIENDS', 'FRIENDS'), title: L('朋友们', 'Friends'), sub: L('他们的站也值得看', 'Their sites are worth a visit') },
-  music: { file: 'music', kicker: L('NOW SPINNING', 'NOW SPINNING'), title: L('唱片机', 'Turntable'), sub: L('我的网易云歌单，放下唱针就响', 'My NetEase playlist. Drop the needle.') },
+  music: { file: 'music', kicker: L('NOW SPINNING', 'NOW SPINNING'), title: L('唱片机', 'Turntable'), sub: L('我的 Apple Music 歌单', 'My Apple Music playlist') },
   // 显示器前那座绿色小城：一根柱子是一天。wide：一整年 53 列要排得下，桌面端面板加宽（见 app.js 的 panelLayout）
   github: { file: 'github', wide: true, kicker: L('GITHUB · @simon200401', 'GITHUB · @simon200401'), title: L('贡献墙', 'Contribution wall'), sub: L('一格是一天，绿得越深，那天提交越多', 'One square per day; the deeper the green, the more I shipped') },
 };
 
 // 笔记本里可以放几个面板，面板顶上有一排按钮切换。日记要先部署 workers/api，再改成 ['blog', 'journal'] 并放进 INTRO_ORDER
 export const NOTEBOOK = [];
+
+// 唱片机放的 Apple Music 歌单（公开歌单的分享链接）；留空就用 music.json 里的曲目和自带播放器
+export const APPLE_MUSIC = 'https://music.apple.com/cn/playlist/life/pl.u-vxy69q3FWBvN9eo';
+
+// 分享链接 → 嵌入播放器地址；不是 Apple Music 歌单链接就返回 null
+export function appleEmbed(url) {
+  const m = /^https:\/\/music\.apple\.com\/([a-z]{2})\/playlist\/([^/?#]+)\/(pl\.[\w.-]+)/i.exec(url || '');
+  return m ? `https://embed.music.apple.com/${m[1]}/playlist/${m[2]}/${m[3]}` : null;
+}
 
 // 摄影合集的先后和名字：key 是 photos.json 里每张照片的 category。没登记的分类会排在最后。
 export const ALBUMS = [

@@ -1,7 +1,7 @@
 // 入口：状态、交互、面板（静态 + 从旧站导入的内容）、对话、阅读模式。画面交给 stage.js，坐标换算在 geometry.js。
 import { groupAlbums } from './albums.js';
 import { streamChat } from './chat.js';
-import { ALBUMS, CHAT, DYNAMIC, HOTS, INTRO_ORDER, LABELS, NOTEBOOK, PANELS, STYLES, UI, matchTopic } from './content.js?v=20261018-2';
+import { ALBUMS, APPLE_MUSIC, CHAT, DYNAMIC, HOTS, INTRO_ORDER, LABELS, NOTEBOOK, PANELS, STYLES, UI, appleEmbed, matchTopic } from './content.js?v=20261018-2';
 import * as G from './geometry.js?v=20261011-1';
 import { renderGithub, tipLabel } from './github.js';
 import { renderJournal } from './journal.js?v=20261012-2';
@@ -389,8 +389,17 @@ const RENDER = {
   news(body, data) {
     renderNews(body, data, { el, extLink, lang: () => state.lang });
   },
-  // 黑胶唱片机。歌单是 music.json（从网易云同步），真正出声的是 music.js 里的播放器。
+  // 黑胶唱片机。设了 APPLE_MUSIC 就直接嵌 Apple Music 的播放器；否则歌单是 music.json，出声的是 music.js 里的播放器。
   music(body, data) {
+    const embed = appleEmbed(APPLE_MUSIC);
+    if (embed) {
+      const frame = el('iframe', 'apple-music');
+      Object.assign(frame, { src: embed, title: 'Apple Music', loading: 'lazy' });
+      frame.setAttribute('allow', 'autoplay *; encrypted-media *; clipboard-write');
+      frame.setAttribute('sandbox', 'allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation');
+      body.append(frame, extLink('btn small', 'Apple Music', APPLE_MUSIC));
+      return;
+    }
     if (!data.tracks.length) { body.append(el('p', null, tr(UI.musicEmpty))); return; }
     player = player || createPlayer(new Audio());
     if (!player.state.tracks.length) player.load(data.tracks);

@@ -186,22 +186,24 @@ def build_monitor():
 
 
 def porsche(name, loc, yaw, paint, hot=None, scale=1.0):
-    """风格化的 911：低矮的车身 + 圆顶座舱 + 后部溜背，四个轮子，圆头灯。长约 0.11 m（1:40 左右）。"""
+    """风格化的帕拉梅拉：长而低的四门轿跑，车顶从 A 柱一路溜到车尾，尾部一条贯穿尾灯。长约 0.125 m。"""
     s = scale
     root = empty(name, loc, (0, 0, R(yaw)))
-    body, glass, tyre, rim, chrome = M(name + "_paint", paint, 0.25, metal=0.3), M("car_glass", "#1d2a38", 0.1), M("car_tyre", "#141416", 0.8), M("car_rim", "#c9ccd2", 0.3, metal=0.7), M("car_light", "#fff4d6", 0.2, emit=1.5)
-    # 车头朝 -X；下车身是圆角板，上面压一个半椭球当座舱和溜背
-    slab(name + "_floor", 0.110 * s, 0.046 * s, 0.018 * s, 0.014 * s, (0, 0, 0.016 * s), body, hot=hot).parent = root
-    ball(name + "_cabin", 1.0, (0.008 * s, 0, 0.024 * s), body, scale=(0.052 * s, 0.022 * s, 0.020 * s), half=True, hot=hot, parent=root)
-    ball(name + "_glass", 1.0, (0.002 * s, 0, 0.026 * s), glass, scale=(0.034 * s, 0.0215 * s, 0.0165 * s), half=True, hot=hot, parent=root)
-    ball(name + "_hood", 1.0, (-0.030 * s, 0, 0.022 * s), body, scale=(0.026 * s, 0.021 * s, 0.008 * s), half=True, hot=hot, parent=root)
-    box(name + "_wing", (0.012 * s, 0.040 * s, 0.002 * s), (0.050 * s, 0, 0.030 * s), body, hot=hot, parent=root)   # 后部小尾翼
+    body, glass, tyre, rim = M(name + "_paint", paint, 0.25, metal=0.4), M("car_glass", "#1d2a38", 0.1), M("car_tyre", "#141416", 0.8), M("car_rim", "#c9ccd2", 0.3, metal=0.7)
+    head, tail = M("car_light", "#fff4d6", 0.2, emit=1.5), M("car_tail", "#e5484d", 0.3, emit=2.0)
+    # 车头朝 -X；下车身是圆角板，上面压一个拉长、重心偏后的半椭球当座舱和溜背
+    slab(name + "_floor", 0.125 * s, 0.048 * s, 0.018 * s, 0.016 * s, (0, 0, 0.016 * s), body, hot=hot).parent = root
+    ball(name + "_cabin", 1.0, (0.010 * s, 0, 0.024 * s), body, scale=(0.060 * s, 0.023 * s, 0.018 * s), half=True, hot=hot, parent=root)
+    ball(name + "_glass", 1.0, (0.004 * s, 0, 0.026 * s), glass, scale=(0.042 * s, 0.0225 * s, 0.0145 * s), half=True, hot=hot, parent=root)
+    box(name + "_pillar", (0.0035 * s, 0.0455 * s, 0.013 * s), (0.004 * s, 0, 0.033 * s), body, hot=hot, parent=root)   # B 柱：分出前后门的车窗
+    ball(name + "_hood", 1.0, (-0.036 * s, 0, 0.022 * s), body, scale=(0.030 * s, 0.022 * s, 0.007 * s), half=True, hot=hot, parent=root)
+    box(name + "_taillight", (0.002 * s, 0.044 * s, 0.003 * s), (0.0627 * s, 0, 0.022 * s), tail, hot=hot, parent=root)
     for sx in (-1, 1):
         for sy in (-1, 1):
-            x, y = (-0.034 if sx < 0 else 0.032) * s, sy * 0.022 * s
-            cyl(f"{name}_tyre{sx}{sy}", 0.0115 * s, 0.009 * s, (x, y, 0.0115 * s), tyre, rot=(math.pi / 2, 0, 0), seg=20, hot=hot, parent=root)
-            cyl(f"{name}_rim{sx}{sy}", 0.0068 * s, 0.0095 * s, (x, y, 0.0115 * s), rim, rot=(math.pi / 2, 0, 0), seg=16, hot=hot, parent=root)
-        ball(f"{name}_lamp{sx}", 0.0055 * s, (-0.052 * s, sx * 0.014 * s, 0.022 * s), chrome, scale=(0.6, 1, 1), hot=hot, parent=root)
+            x, y = (-0.040 if sx < 0 else 0.038) * s, sy * 0.023 * s
+            cyl(f"{name}_tyre{sx}{sy}", 0.012 * s, 0.009 * s, (x, y, 0.012 * s), tyre, rot=(math.pi / 2, 0, 0), seg=20, hot=hot, parent=root)
+            cyl(f"{name}_rim{sx}{sy}", 0.0075 * s, 0.0095 * s, (x, y, 0.012 * s), rim, rot=(math.pi / 2, 0, 0), seg=16, hot=hot, parent=root)
+        ball(f"{name}_lamp{sx}", 0.005 * s, (-0.060 * s, sx * 0.016 * s, 0.021 * s), head, scale=(0.6, 1.3, 0.8), hot=hot, parent=root)
     return root
 
 
@@ -221,7 +223,7 @@ def build_track():
             box(f"kerb{side}{k}", (0.012, 0.006, 0.003), (x, y, 0.0175), kerb[k % 2], rot=(0, 0, a + math.pi / 2), hot="cars", parent=root)
     for k in range(8):   # 起跑线的黑白格
         box(f"grid{k}", (0.004, 0.0045, 0.0005), (0.04 + 0.004 * (k % 2), -d / 2 + 0.006 + 0.0045 * (k // 2 * 2 + k % 2) / 1.0, 0.0163), kerb[1] if k % 2 else M("grid_b", "#141416", 0.6), hot="cars", parent=root)
-    porsche("car", (-0.06, -d / 2 + 0.019, 0.016), 180 - 4, "#c8ccd1", hot="cars", scale=0.8).parent = root
+    porsche("car", (-0.06, -d / 2 + 0.019, 0.016), 180 - 4, "#6f6b64", hot="cars", scale=0.75).parent = root   # 26 款帕拉梅拉，火山灰
 
 
 def build_left():

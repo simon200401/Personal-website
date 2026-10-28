@@ -173,3 +173,11 @@ test('摄影合集：名字中英文齐全，key 不重复', () => {
 test('对话接口地址要么留空（只用预设回答），要么是 https', () => {
   assert.ok(CHAT.api === '' || /^https:\/\//.test(CHAT.api), CHAT.api);
 });
+
+test('Apple Music：分享链接能转成嵌入地址', async () => {
+  const { APPLE_MUSIC, appleEmbed } = await import('../site/js/content.js');
+  assert.equal(appleEmbed('https://music.apple.com/cn/playlist/life/pl.u-vxy69q3FWBvN9eo'), 'https://embed.music.apple.com/cn/playlist/life/pl.u-vxy69q3FWBvN9eo');
+  assert.equal(appleEmbed('https://example.com/x'), null);
+  assert.equal(appleEmbed(''), null);
+  if (APPLE_MUSIC) assert.ok(appleEmbed(APPLE_MUSIC));
+});
