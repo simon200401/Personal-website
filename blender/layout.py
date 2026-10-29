@@ -4,7 +4,7 @@
 每个可点的东西带 hot 名字，前端按它开面板：
   board / press / monitor / keyboard / mask（切换宇宙）/ zine-1 / zine-2 / zine-3（三个项目）
   notebook（博客）/ phone / plant（兴趣）/ camera + photos（摄影）/ badge（工作）/ news（报纸）/ games（PS5、Switch）
-  music（唱片）/ contact（名片）/ fries / cars（显示器前的赛道和保时捷）/ calendar（年度回顾）/ globe（去过的地方）
+  music（唱片）/ headphones（耳机，也是歌单）/ contact（名片）/ fries / cars（显示器前的赛道和保时捷）/ calendar（年度回顾）/ globe（去过的地方）
   movies（电影票根）/ cards（卡片盒：认知积累）/ cat（美短）/ now（NOW 便签）
 """
 import json
@@ -184,14 +184,8 @@ def build_track():
 def build_left():
     # PS5 Slim + GTA VI + DualSense（Roberto Domínguez，CC BY 4.0）：立在桌子左后角，点开是游戏
     glb("ps5", "models/ps5.glb", 0.33, (-1.14, 0.40, T), rot=(0, 0, R(18)), hot="games")
-    # AirPods Max（Mr.Philin，CC BY 4.0）：立在显示器左前方
-    glb("airpods", "models/airpods_max.glb", 0.17, (-0.96, 0.17, T), rot=(0, 0, R(24)))
-    # 马克杯
-    mx, my = -1.12, -0.02
-    cyl("mug", 0.047, 0.095, (mx, my, T + 0.0475), M("mug", "#ffffff", 0.4))
-    cyl("mug_band", 0.0475, 0.02, (mx, my, T + 0.07), M("mug_band", "#2b6be4", 0.4))
-    cyl("mug_coffee", 0.040, 0.004, (mx, my, T + 0.094), M("coffee", "#4a2c1a", 0.3))
-    torus("mug_handle", 0.03, 0.009, (mx - 0.05, my + 0.01, T + 0.05), M("mug", "#ffffff"), rot=(math.pi / 2, 0, R(160)), seg=20, sub=8)
+    # AirPods Max（Mr.Philin，CC BY 4.0）：立在显示器左前方，点开和唱片一样是歌单
+    glb("airpods", "models/airpods_max.glb", 0.17, (-0.96, 0.17, T), rot=(0, 0, R(24)), hot="headphones")
     # 唱片：从封套里抽出来一半，点开是黑胶播放器
     sx, sy, vx, vy = -0.968, -0.06, -0.923, -0.03
     box("vinyl_sleeve", (0.18, 0.18, 0.004), (sx, sy, T + 0.004), M("vinyl_sleeve", "#8e4ec6", 0.7), rot=(0, 0, R(8)), hot="music")
@@ -217,13 +211,6 @@ def build_left():
 
 
 def build_center():
-    # 笔架
-    px, py = 0.00, 0.36
-    box("pen_rack", (0.21, 0.07, 0.07), (px, py, T + 0.035), M("pen_rack", "#22242a", 0.5))
-    for i, col in enumerate(("#e5484d", "#2b6be4", "#f5b301", "#30a46c", "#8e4ec6", "#ff7a3d", "#17181c", "#3de0ff")):
-        x = px - 0.084 + i * 0.024
-        tip = (x + rng.uniform(-0.012, 0.012), py + rng.uniform(0.0, 0.03), T + 0.17 + rng.uniform(-0.01, 0.02))
-        rod(f"pen{i}", (x, py, T + 0.04), tip, 0.008, M(f"pen{i}", col, 0.4), seg=10)
     # 小布：美短（Zhuier 的猫模型，CC BY 4.0），贴图去掉棕色调成银虎斑；脸朝镜头偏右
     glb("cat", "models/cat.glb", 0.33, (0.34, 0.25, T), rot=(0, 0, R(16)), hot="cat", sat=0.12, val=1.25)
     # 迈尔斯的面具（spider boy，CC BY 4.0）：点它切换宇宙（致敬参考站）；仰面放倒，脸稍微朝镜头
