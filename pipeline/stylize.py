@@ -132,8 +132,6 @@ class Ctx:
         if vary:
             a = np.maximum(a, dilate(self.e_outer, w_outer * 1.9 * s) * (self.noise(26) > 0.1))
         a = np.maximum(a, dilate(self.e_inner, w_inner * s) if w_inner * s >= 1 else self.e_inner * min(1, w_inner * s + 0.4))
-        if w_detail:
-            a = np.maximum(a, blur(self.e_detail, 0.5 * s) * min(1.0, w_detail * 1.6))
         if city:
             a = np.maximum(a, blur(self.e_city, 0.45 * s) * city)
         a = np.clip(blur(a, 0.42 * s) * 1.25, 0, 1)
@@ -141,6 +139,8 @@ class Ctx:
             mx = (self.xx + self.noise(18, wobble * s)).astype(np.float32)
             my = (self.yy + self.noise(18, wobble * s)).astype(np.float32)
             a = cv2.remap(a, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        if w_detail:   # 印刷细节（贴图上的字）只描一道细线，不抖不加粗，否则小字会糊成一团
+            a = np.maximum(a, blur(self.e_detail, 0.25 * s) * min(1.0, w_detail * 0.8))
         return a
 
     def light(self, sun=1.0, sky=1.0, screen=1.0, rgb=1.0, lamp=1.0):
@@ -198,7 +198,7 @@ def comic(C):
     out = mix(out, np.clip(out * 1.12 + hexc("#fff3b0") * 0.16, 0, 1), sunpatch)
     out = mix(out, hexc("#fff8d8")[None, None], C.halftone(np.clip(sunpatch - 0.55, 0, 1) * 0.5, 6.5, 60) * 0.5)
     out = np.clip(out + C.glow(10, 0.5) + C.E * 0.25, 0, 1)
-    k = int(round(2.2 * C.s))                                             # 套色错位
+    k = int(round(0.8 * C.s))                                             # 套色错位（太大会把小字糊掉）
     out = np.stack([np.roll(out[..., 0], (k // 2, k), (0, 1)), out[..., 1], np.roll(out[..., 2], (-k // 2, -k), (0, 1))], -1)
     out = out * (C.paper("#fff6e0", 0.03, 0.015) * 0.5 + 0.5)
     return mix(out, hexc("#14121c")[None, None], C.lines(1.7, 0.9, 0.6))
@@ -438,8 +438,8 @@ def main():
         C.rs = np.random.RandomState(5)
         img = (np.clip(RENDER[name](C), 0, 1) * 255 + 0.5).astype(np.uint8)
         im = Image.fromarray(img)
-        im.save(out / "styles" / f"{name}.webp", quality=84, method=5)
-        im.resize((C.W // 2, C.H // 2), Image.NEAREST if name == "pixel" else Image.LANCZOS).save(out / "styles" / f"{name}@1x.webp", quality=80, method=5)
+        im.save(out / "styles" / f"{name}.webp", quality=92, method=5)
+        im.resize((C.W // 2, C.H // 2), Image.NEAREST if name == "pixel" else Image.LANCZOS).save(out / "styles" / f"{name}@1x.webp", quality=88, method=5)
         print("STYLE", name)
 
 
