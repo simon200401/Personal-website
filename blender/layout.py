@@ -130,16 +130,15 @@ def build_wall_stuff():
         plane(f"wall_{name}", pw, ph, (px, WY - 0.004 - i * 0.0015, pz), tex(name + ".png", rough=0.9), rot=(0, R(tilt), 0), hot="press")
         box(f"tape_{name}", (0.05, 0.002, 0.018), (px, WY - 0.012 - i * 0.0015, pz + ph / 2 - 0.004), M("tape", "#f5e6a8", 0.7), rot=(0, R(tilt + 8), 0), hot="press")
 
-    # 霓虹灯牌：名字首字母 S（折线画的），挂在窗格上，背后是楼群
+    # 霓虹灯牌：一个红色的 X，挂在窗格上，背后是楼群
     nx, nz = 1.64, 1.50
     cyl("neon_disc", 0.19, 0.02, (nx, WY - 0.012, nz), M("neon_disc", "#18181b", 0.4), rot=(math.pi / 2, 0, 0), seg=64)
     glow = M("neon_bar", "#ff4a4a", 0.3, emit=6.0)
-    zw, zh = 0.075, 0.10
-    pts = [(nx + zw, nz + zh), (nx - zw, nz + zh), (nx - zw, nz + 0.005), (nx + zw, nz - 0.005), (nx + zw, nz - zh), (nx - zw, nz - zh)]
-    for k, ((x0, z0), (x1, z1)) in enumerate(zip(pts, pts[1:])):
-        rod(f"neon_bar{k}", (x0, WY - 0.04, z0), (x1, WY - 0.04, z1), 0.016, glow, seg=20)
-    for k, (x, z) in enumerate(pts):
-        ball(f"neon_cap{k}", 0.016, (x, WY - 0.04, z), glow)
+    xw, xh = 0.085, 0.10
+    for k, ((x0, z0), (x1, z1)) in enumerate((((nx - xw, nz + xh), (nx + xw, nz - xh)), ((nx + xw, nz + xh), (nx - xw, nz - xh)))):
+        rod(f"neon_bar{k}", (x0, WY - 0.04 - k * 0.012, z0), (x1, WY - 0.04 - k * 0.012, z1), 0.016, glow, seg=20)
+        for e, (x, z) in enumerate(((x0, z0), (x1, z1))):
+            ball(f"neon_cap{k}{e}", 0.016, (x, WY - 0.04 - k * 0.012, z), glow)
     light("neon_light", "POINT", "rgb", 4, "#ffb0b0", (nx, WY - 0.22, nz), size=0.12)
     # 贴墙灯带
     light("strip_L", "AREA", "rgb", 9, "#ff4fd8", (-1.0, WY - 0.07, 0.80), rot=(math.pi, 0, 0), size=1.3, size_y=0.04)
