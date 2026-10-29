@@ -204,8 +204,8 @@ def board(w=2400, h=1176):
         x, y, r = rng.uniform(0, w), rng.uniform(0, h), rng.uniform(1, 3.5)
         d.ellipse((x - r, y - r, x + r, y + r), fill=rng.choice([(176, 120, 66, 150), (232, 184, 124, 130), (150, 98, 52, 120)]))
 
-    # 标题条：WHO IS / ZIHAO?
-    for txt, col, cx, cy, ang, fs in (("WHO IS", PAPER, 930, 150, 3, 96), ("ZIHAO?", YELLOW, 1390, 162, -3, 108)):
+    # 标题条：WHO IS / SIMON?
+    for txt, col, cx, cy, ang, fs in (("WHO IS", PAPER, 880, 150, 3, 96), ("SIMON?", YELLOW, 1300, 162, -3, 108)):
         f = font("marker", fs)
         tw = int(d.textlength(txt, font=f)) + 56
         strip = card(tw, fs + 36, col, border=4, seed=fs)
@@ -217,7 +217,7 @@ def board(w=2400, h=1176):
     nd = ImageDraw.Draw(name)
     nd.rectangle((22, 22, 537, 337), outline=INK, width=2)
     nd.text((280, 122), "许子豪", font=font("cjk", 128), fill=INK, anchor="mm")
-    nd.text((280, 220), "Z I H A O   X U", font=font("din", 46), fill=INK, anchor="mm")
+    nd.text((280, 220), "S I M O N   X U", font=font("din", 46), fill=INK, anchor="mm")
     nd.rectangle((60, 252, 500, 255), fill=INK)
     nd.text((280, 284), "知 行 合 一", font=font("cjk", 34), fill=RED, anchor="mm")
     nd.text((280, 320), "SCHOOL · CITY", font=font("mono", 19), fill=INK, anchor="mm")   # TODO
@@ -318,7 +318,7 @@ def board(w=2400, h=1176):
 
 
 # ───────────────────────── 剪报 / 海报 ─────────────────────────
-def clipping(headline, sub, kind, seed, text, w=640, h=820, masthead="THE DAILY ZIHAO", image=None):
+def clipping(headline, sub, kind, seed, text, w=640, h=820, masthead="THE DAILY SIMON", image=None):
     """一张剪报：报头、大标题、导语、配图，下面是一段真实的报道正文。"""
     im = paper(w, h, NEWS, grain=9, seed=seed)
     d = ImageDraw.Draw(im)
@@ -580,7 +580,7 @@ def notebook(w=1400, h=980):
     d.text((70, 760), "small steps, real work.\nlearn along the way.", font=font("hand", 44), fill=INK)
 
     x0 = w / 2 + 60
-    d.text((x0, 40), "Zihao.", font=font("hand", 110), fill=INK)
+    d.text((x0, 40), "Simon.", font=font("hand", 110), fill=INK)
     d.line((x0, 168, x0 + 300, 160), fill=RED, width=6)
     for i, (txt, done) in enumerate((("set up the repo", True), ("render the desk", True), ("personal site, 10 styles", True), ("fill in real content", False), ("add photos", False), ("write the first post", False))):
         y = 230 + i * 86
@@ -603,7 +603,7 @@ def screen(w=1600, h=1000):
             d.rectangle((x, 196, x + 62, 268), fill=col)
             d.text((x + 31, 232), ch, font=font("impact", 58), fill=INK, anchor="mm")
         x += 70 if col else 28
-    d.text((w / 2, 440), "Hi, I'm Zihao.", font=font("serif", 170), fill=(255, 122, 61), anchor="mm")
+    d.text((w / 2, 440), "Hi, I'm Simon.", font=font("serif", 170), fill=(255, 122, 61), anchor="mm")
     d.text((w / 2, 580), "Welcome to my desk. Ask me anything.", font=font("mono", 38), fill=(235, 235, 240), anchor="mm")
     cx = 190
     for chip in ("Who are you?", "What do you build?", "How to reach you?", "Why 10 styles?"):
@@ -651,7 +651,7 @@ def small_papers(out):
     d.rectangle((6, 6, 180, 393), fill=INK)
     for i, k in enumerate((0.4, 0.75, 0.5)):
         d.rounded_rectangle((60 + i * 34 - 11, 200 - 110 * k, 60 + i * 34 + 11, 200 + 110 * k), radius=11, fill=PAPER)
-    d.text((216, 70), "ZIHAO XU", font=font("black", 64), fill=INK)
+    d.text((216, 70), "SIMON XU", font=font("black", 64), fill=INK)
     d.text((216, 150), "Your tagline here", font=font("mono", 30), fill=INK)   # TODO
     d.text((216, 236), "you@example.com", font=font("mono", 28), fill=RED)   # TODO
     d.text((216, 282), "github.com/simon200401", font=font("mono", 28), fill=INK)
@@ -672,7 +672,7 @@ def newspaper(w=780, h=1020):
     d = ImageDraw.Draw(im)
     d.text((w / 2, 62), "AI DAILY", font=font("serif", 104), fill=INK, anchor="mm")
     d.rectangle((26, 122, w - 26, 128), fill=INK)
-    d.text((30, 136), "ZIHAO'S NEWS DESK", font=font("mono", 22), fill=INK)
+    d.text((30, 136), "SIMON'S NEWS DESK", font=font("mono", 22), fill=INK)
     d.text((w - 30, 136), stories[0]["date"] if stories else "", font=font("mono", 22), fill=RED, anchor="ra")
     d.rectangle((26, 168, w - 26, 170), fill=INK)
     y = 184
@@ -751,7 +751,7 @@ def main(out):
          "CITY — Replace this clipping with something you did: a project you finished, a competition, a talk or a milestone. A few sentences in the style of a news story."),
         ("A YEAR IN REVIEW", "what this year taught me", "notes", None,
          "CITY — A short look back: the places you went, what you learned and the moment you remember most from this year."),
-        ("MEET ZIHAO XU", "student · builder · photographer", "person", avatar(),
+        ("MEET SIMON XU", "student · builder · photographer", "person", avatar(),
          "CITY — A short profile: who you are, where you study or work, and what you care about. This sits next to the poster on the wall."),
         ("NEXT UP", "what I'm working on now", "podium", None,
          "CITY — Describe what you are building or learning right now, and what you hope to do next."),

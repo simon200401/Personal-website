@@ -192,7 +192,7 @@ export function renderGithub(body, data, h) {
     const { weeks, months } = wallGrid(view);
     const lang = h.lang();
     const svg = h.svg('svg', { viewBox: `0 0 ${LEFT + weeks.length * PITCH} ${TOP + 7 * PITCH}`, class: 'gh-svg', role: 'img', tabindex: '0',
-      'aria-label': fill(tr(STR.wall), { name: lang === 'zh' ? 'Zihao ' : 'Zihao’s', n: fmtNum(view.total), streak: s.longest.days }) });
+      'aria-label': fill(tr(STR.wall), { name: lang === 'zh' ? 'Simon ' : 'Simon’s', n: fmtNum(view.total), streak: s.longest.days }) });
     months.forEach((m) => {
       const t = h.svg('text', { x: LEFT + m.col * PITCH, y: TOP - 5 });
       t.textContent = lang === 'zh' ? `${m.month}月` : MONTHS[m.month - 1];

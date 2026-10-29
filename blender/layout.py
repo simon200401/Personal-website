@@ -130,12 +130,12 @@ def build_wall_stuff():
         plane(f"wall_{name}", pw, ph, (px, WY - 0.004 - i * 0.0015, pz), tex(name + ".png", rough=0.9), rot=(0, R(tilt), 0), hot="press")
         box(f"tape_{name}", (0.05, 0.002, 0.018), (px, WY - 0.012 - i * 0.0015, pz + ph / 2 - 0.004), M("tape", "#f5e6a8", 0.7), rot=(0, R(tilt + 8), 0), hot="press")
 
-    # 霓虹灯牌：名字首字母 Z，挂在窗格上，背后是楼群
+    # 霓虹灯牌：名字首字母 S（折线画的），挂在窗格上，背后是楼群
     nx, nz = 1.64, 1.50
     cyl("neon_disc", 0.19, 0.02, (nx, WY - 0.012, nz), M("neon_disc", "#18181b", 0.4), rot=(math.pi / 2, 0, 0), seg=64)
     glow = M("neon_bar", "#ff4a4a", 0.3, emit=6.0)
-    zw, zh = 0.085, 0.10
-    pts = [(nx - zw, nz + zh), (nx + zw, nz + zh), (nx - zw, nz - zh), (nx + zw, nz - zh)]
+    zw, zh = 0.075, 0.10
+    pts = [(nx + zw, nz + zh), (nx - zw, nz + zh), (nx - zw, nz + 0.005), (nx + zw, nz - 0.005), (nx + zw, nz - zh), (nx - zw, nz - zh)]
     for k, ((x0, z0), (x1, z1)) in enumerate(zip(pts, pts[1:])):
         rod(f"neon_bar{k}", (x0, WY - 0.04, z0), (x1, WY - 0.04, z1), 0.016, glow, seg=20)
     for k, (x, z) in enumerate(pts):

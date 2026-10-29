@@ -49,7 +49,7 @@ export const HOTS = {
 };
 
 export const LABELS = {
-  board: { zh: '我是谁', en: 'Who is Zihao?' },
+  board: { zh: '我是谁', en: 'Who is Simon?' },
   press: { zh: '剪报墙', en: 'Press clippings' },
   monitor: { zh: '跟我聊聊', en: 'Talk to me' },
   keyboard: { zh: '点键盘，跟我聊', en: 'Click the keyboard. Talk to me.' },
@@ -93,8 +93,8 @@ const project = (n, zh, en) => ({
 
 export const PANELS = {
   about: {
-    kicker: L('WHO IS ZIHAO?', 'WHO IS ZIHAO?'),
-    title: L('Zihao Xu', 'Zihao Xu'),
+    kicker: L('WHO IS SIMON?', 'WHO IS SIMON?'),
+    title: L('Simon Xu', 'Simon Xu'),
     sub: L('一句话介绍：学校、专业，或者现在在做什么', 'One line: school, major, or what you do now'),
     body: L(
       ['这里是自我介绍的第一段：你是谁，在哪里，在学什么或做什么。', '第二段可以写你最近在做的事情，以及你在意什么。'],
@@ -204,7 +204,7 @@ export const PANELS = {
     links: [],
   },
   press: {
-    kicker: L('THE DAILY ZIHAO', 'THE DAILY ZIHAO'),
+    kicker: L('THE DAILY SIMON', 'THE DAILY SIMON'),
     title: L('剪报墙', 'Press clippings'),
     sub: L('墙上贴的几件事', 'What is pinned to the wall'),
     body: L([], []),
@@ -276,10 +276,10 @@ export const ALBUMS = [
 // 显示器里的对话：api 填自己部署的 workers/api 地址后接真模型；留空就只用下面的预设回答
 export const CHAT = {
   api: '',
-  hello: L('你好，我是 Zihao 的 AI 分身。直接问，或者点下面的问题。', 'Hi, I’m Zihao’s AI stand-in. Ask anything, or pick a question below.'),
+  hello: L('你好，我是 Simon 的 AI 分身。直接问，或者点下面的问题。', 'Hi, I’m Simon’s AI stand-in. Ask anything, or pick a question below.'),
   fallback: L('这个我没准备台词。试试问：你是谁、做过什么项目、怎么联系你。', 'I don’t have a line for that. Try: who are you, what have you built, how to reach you.'),
   topics: [
-    { id: 'who', keys: ['你是谁', '介绍', 'who', 'about', 'yourself', 'zihao'], q: L('你是谁？', 'Who are you?'), a: L('我是 Zihao Xu。（TODO：换成一两句真实的自我介绍）', 'I’m Zihao Xu. (TODO: replace with a real one- or two-line intro)'), panel: 'about' },
+    { id: 'who', keys: ['你是谁', '介绍', 'who', 'about', 'yourself', 'simon'], q: L('你是谁？', 'Who are you?'), a: L('我是 Simon Xu。（TODO：换成一两句真实的自我介绍）', 'I’m Simon Xu. (TODO: replace with a real one- or two-line intro)'), panel: 'about' },
     { id: 'projects', keys: ['项目', '做过', 'project', 'build', 'built'], q: L('你做过什么项目？', 'What have you built?'), a: L('桌上那几本刊物和手柄后面都是我的项目，点开看看。', 'The zines and the gamepad on the desk lead to my projects. Have a look.'), panel: 'projects' },
     { id: 'styles', keys: ['风格', '宇宙', 'style', 'universe', 'blender', '怎么做'], q: L('为什么有十种画风？', 'Why ten styles?'), a: L('同一张桌子在 Blender 里建模，一个机位渲出底色、光影和轮廓，再合成十种印刷风格。点桌上的面具，或者按空格，就换一个宇宙。', 'One desk modelled in Blender, one camera, rendered into colour, light and outline passes, then composited into ten print styles. Click the mask on the desk, or press Space, to jump universes.') },
     { id: 'contact', keys: ['联系', '邮箱', 'email', 'contact', 'reach'], q: L('怎么联系你？', 'How do I reach you?'), a: L('点桌上的名片，联系方式都在那里。', 'Click the business card on the desk; my contact details are there.'), panel: 'contact' },
@@ -325,7 +325,7 @@ export const UI = {
   musicOpen: L('在网易云打开歌单 →', 'Open on NetEase Music →'),
   musicBlocked: L('这几首在你这边放不出来，多半是地区限制。去网易云听，或者换一首试试。', 'These tracks will not play from where you are, most likely a region lock. Try NetEase Music, or pick another one.'),
   musicEmpty: L('歌单暂时是空的。', 'The crate is empty right now.'),
-  canvasLabel: L('Zihao 的工位：可点击的 3D 场景。完整内容见 INTRO 阅读模式。', 'Zihao’s desk: a clickable 3D scene. The full content is available in INTRO read mode.'),
+  canvasLabel: L('Simon 的工位：可点击的 3D 场景。完整内容见 INTRO 阅读模式。', 'Simon’s desk: a clickable 3D scene. The full content is available in INTRO read mode.'),
 };
 
 // 文字提问 → 话题：命中关键词最多的那个（并列取靠前的）；一个都没命中返回 null。纯函数，方便测试
