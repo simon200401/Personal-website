@@ -1,4 +1,4 @@
-// 全站文案（中英）。改内容只改这里；标了 TODO 的是占位。
+// 全站文案（中英）。改内容只改这里。
 // 面板可选字段：image { src, alt }（配图）、sections [{ heading, items }]（带小标题的分组要点）。
 
 export const LANGS = ['zh', 'en'];
@@ -52,10 +52,10 @@ export const LABELS = {
   monitor: { zh: '跟我聊聊', en: 'Talk to me' },
   keyboard: { zh: '点键盘，跟我聊', en: 'Click the keyboard. Talk to me.' },
   mask: { zh: '换一个宇宙', en: 'Switch universe' },
-  'zine-1': { zh: 'F1 网站', en: 'F1 website' },
-  phone: { zh: 'iOS App', en: 'iOS app' },
-  'zine-2': { zh: 'AIGC 短片', en: 'AIGC short film' },
-  'zine-3': { zh: 'iOS App', en: 'iOS app' },
+  'zine-1': { zh: 'PitMind · F1 AI 搭子', en: 'PitMind · F1 AI companion' },
+  phone: { zh: '忍了么 · iOS App', en: 'RenLeMe · iOS app' },
+  'zine-2': { zh: '《假如那颗苹果》· AI 短片', en: 'What If That Apple · AI short' },
+  'zine-3': { zh: '忍了么 · iOS App', en: 'RenLeMe · iOS app' },
   notebook: { zh: '博客', en: 'Blog' },
   plant: { zh: '兴趣爱好', en: 'Interests' },
   badge: { zh: '实习 / 工作', en: 'Work' },
@@ -75,17 +75,6 @@ export const LABELS = {
 };
 
 const L = (zh, en) => ({ zh, en });
-
-// TODO：以下面板都是占位，换成你自己的内容。每段文字都要写中英两版。
-const project = (n, zh, en, subZh, subEn) => ({
-  kicker: L(`项目 · 0${n}`, `PROJECT · 0${n}`),
-  title: L(zh, en),
-  sub: L(subZh, subEn),
-  body: L(['TODO：这个项目是什么、为什么做、做到了哪一步。'], ['TODO: what it is, why I made it, and where it stands.']),
-  bullets: L([], []),
-  tags: [],
-  links: [],
-});
 
 export const PANELS = {
   about: {
@@ -140,9 +129,81 @@ export const PANELS = {
     tags: [],
     links: [{ label: L('游戏', 'Games'), action: 'games' }, { label: L('赛车', 'Racing'), action: 'cars' }, { label: L('电影', 'Films'), action: 'movies' }],
   },
-  project1: project(1, 'F1 网站', 'F1 website', '还没发布', 'Not launched yet'),
-  project2: project(2, 'AIGC 短片', 'AIGC short film', '用生成式 AI 做的短片', 'A short film made with generative AI'),
-  project3: project(3, 'iOS App', 'iOS app', '一个 iPhone 应用', 'An iPhone app'),
+  project1: {
+    kicker: L('项目 · 01', 'PROJECT · 01'),
+    title: L('PitMind', 'PitMind'),
+    sub: L('给 F1 新球迷的 AI 观赛搭子', 'An AI race companion for new F1 fans'),
+    body: L(
+      ['PitMind 是一个面向 F1 新手和轻度球迷的 AI 助手，按场景来回答问题：赛前准备、比赛中的实时解释、赛后复盘，还有术语、赛程、车手车队资料、积分榜和赛季背景。', '它把稳定的知识、结构化的比赛数据和受控的大模型编排分开管理，目标是让 F1 更容易看懂。'],
+      ['PitMind is a scenario-first AI assistant for beginner and casual Formula 1 fans. It covers pre-race prep, live explanations, post-race reviews, terminology, schedules, profiles, standings and season context.', 'It keeps governed knowledge, structured race data and controlled LLM orchestration separate, all to make F1 easier to follow.'],
+    ),
+    bullets: L(
+      ['覆盖 9 类核心能力，中英双语，有统一对话、Race Hub 和管理后台', '意图基准 intent_benchmark_v2：28/28 通过', 'MVP 评测 8/8 场景通过，意图、路由、内容、结构四项都是 100%', '状态：开发中，完整的全栈产品已经能在本地跑起来'],
+      ['Nine core capability families, in English and Chinese, with Unified Chat, Race Hub and an admin dashboard', 'intent_benchmark_v2: 28/28 cases passed', 'MVP eval: 8/8 scenarios, 100% on intent, routing, content and structure', 'Status: in development; the full stack runs locally'],
+    ),
+    sections: [
+      {
+        heading: L('我做了什么', 'What I did'),
+        items: L(
+          ['设计并实现了端到端的 Agent 流程：问题识别、意图分类、工具规划、数据检索、回答校验和结构化输出', '搭了 F1 知识和证据体系，把稳定知识、比赛数据、网络兜底和大模型生成的表达分开', '做了带版本的提示词管理、回答改写，以及按喜欢的车手、车队和观赛偏好的个性化', '建了评测和质量门禁，覆盖意图准确率、路由、内容、结构、错误率和运行时延迟'],
+          ['Designed and built the end-to-end agent flow: query recognition, intent classification, tool planning, retrieval, answer validation and structured output', 'Built the F1 knowledge and evidence architecture, separating stable knowledge, race data, web fallback and LLM-written presentation', 'Added versioned prompt management, answer rewriting and personalisation by favourite driver, team and viewing priorities', 'Created an eval and quality-gate system for intent accuracy, routing, content, structure, error rate and latency'],
+        ),
+      },
+    ],
+    tags: ['Next.js', 'FastAPI', 'RAG', 'Agent', 'OpenF1', 'Evals'],
+    links: [],
+  },
+  project2: {
+    kicker: L('项目 · 02', 'PROJECT · 02'),
+    title: L('《假如那颗苹果》', 'What If That Apple'),
+    sub: L('假如那颗苹果没砸中牛顿？', 'What if the apple had missed Newton?'),
+    body: L(
+      ['一部用 AI 生成的成人向黑色幽默动画短片。一个叫 WhatIf 的历史模拟 App 反复重跑同一个问题：1666 年那颗苹果要是没砸中牛顿会怎样？每次都去掉上一次的意外，苹果却总被新的东西截住，世界接连分出五条荒诞的时间线：飞天马车、炼金术、鸟类文明、美食帝国……结尾揭晓，那颗苹果是被人故意放上去的。', '风格参考《爱，死亡和机器人》的「另类历史」：旁白讲因果，画面负责笑点，角色只表演、不说能听懂的语言。'],
+      ['An AI-generated dark-comedy animated short for adults. A history-simulation app called WhatIf keeps re-running one question: what if the apple in 1666 never hit Newton? Each run removes the last accident, yet the apple is always intercepted by something new, and the world spins into five absurd timelines: flying wagons, alchemy, a bird civilisation, a gourmet empire and more. The ending reveals the apple was planted on purpose.', 'The style nods to the “Alternate Histories” episode of Love, Death & Robots: narration carries cause and effect, the visuals carry the jokes, and the characters perform without speaking any recognisable language.'],
+    ),
+    bullets: L(
+      ['粗剪到第 8 版，时长约 7 分 11 秒', '开场和高潮重做成多镜头长镜头，用逐秒的锚点图控制关键动作，转场顺了很多', '状态：制作中（粗剪阶段，旁白和配音还没录）'],
+      ['Rough cut v8, about 7 min 11 s', 'Rebuilt the opening and the climax as multi-shot long takes, with per-second anchor frames for key actions, which smoothed the transitions', 'Status: in progress (rough cut; narration and voices not yet recorded)'],
+    ),
+    sections: [
+      {
+        heading: L('我做了什么', 'What I did'),
+        items: L(
+          ['构思故事和层层叠加的五分支结构，定下风格规则：角色不说人话、画面文字只出现在 App 界面里、结尾两句反转不改', '担任导演，在 LibTV 上用 Seedance 2.5 生成全部镜头；用图像模型做角色设定图、关键帧和动作锚点图，逐个镜头审片、给修改意见', '和 Claude 一起迭代剧本、分镜、生成提示词，检查连续性，出粗剪；决定哪些关键段落重拍，比如把开场重做成 16 秒的多镜头长镜头、把第五分支的高潮重做成 20 秒', '站在观众角度反复看片，抓突兀的转场和穿帮，推动了 8 版粗剪'],
+          ['Wrote the story and its cumulative five-branch structure, and set the rules: wordless characters, on-screen text only in the app UI, and an unchanged two-line twist at the end', 'Directed the film and generated every shot with Seedance 2.5 on LibTV; used an image model for character sheets, key frames and action anchor frames, and reviewed every shot with revision notes', 'Worked with Claude on script and storyboard iterations, generation prompts, continuity checks and the rough cut; chose which sequences to reshoot, such as a 16-second multi-shot opening and a 20-second climax for branch five', 'Re-watched as an audience member to catch abrupt cuts and continuity errors, driving eight rough-cut versions'],
+        ),
+      },
+    ],
+    tags: ['Seedance 2.5', 'LibTV', 'Claude', 'Python', 'ffmpeg', 'CapCut'],
+    links: [],
+  },
+  project3: {
+    kicker: L('项目 · 03', 'PROJECT · 03'),
+    title: L('忍了么', 'RenLeMe'),
+    sub: L('想买、想吃、想刷的时候，先停 15 秒', 'When the urge hits, pause for 15 seconds'),
+    body: L(
+      ['一个 iOS App，给那些想买点什么、想吃点什么、想接着刷手机打游戏的时刻用。点一下，一张「待付款小票」会随着一下下的震动逐行打印出来。15 秒后你来决定：忍住、放进冷静箱以后再说，还是照买不误。', '不评判，不锁机；省下的钱、热量和时间会累积成看得见的目标。'],
+      ['An iOS app for the moments you want to buy something, eat something, or keep scrolling and gaming. Tap once, and an “unpaid receipt” prints out line by line with each haptic tick. After 15 seconds you decide: resist, put it in the cooldown box for later, or go ahead anyway.', 'No judgement, no lockouts; the money, calories and minutes you hold back add up toward goals you can see.'],
+    ),
+    bullets: L(
+      ['2026 年 10 月通过审核，已在 App Store 上架', '96 件日常物品、88 种食物的参考热量表、12 枚怪印章；App 加小组件约 1.9 万行代码', '不用注册，没有广告，没有服务器：数据只在你的手机和你自己的 iCloud 里'],
+      ['Approved and live on the App Store (October 2026)', '96 everyday items, a reference calorie table of 88 foods, 12 odd stamps; about 19k lines of code across the app and widgets', 'No sign-up, no ads, no servers: data stays on your phone and your own iCloud'],
+    ),
+    sections: [
+      {
+        heading: L('我做了什么', 'What I did'),
+        items: L(
+          ['一个人从想法做到上架：定方向，设计「停一下 → 做决定 → 回头看」的流程、冷静箱和集章目标', '发现大家用几次就不打开了，于是重做了回来的理由：周日晚上签收一张「没花出去的账单」、一周后回访「还想要吗」、按行为解锁的怪印章，以及没忍住之后的「再来一次」券', '换掉早期的方向，定下「一桌纸」的视觉语言（黄桌面、白小票、红印章、拼贴剪纸），用 GPT ImageGen 生成了 96 张物品剪纸，重画了 App 图标', '用 AI 编程工具开发，我负责拆解、决策和审查；按苹果的素材规范做了商店截图、预览视频和头图'],
+          ['Took it from idea to App Store on my own: set the direction and designed the pause → decide → look-back flow, the cooldown box and stamp-card goals', 'Noticed people stopped opening it after a few uses, so I reworked the reasons to come back: a Sunday-night “unsold bill” to sign, a one-week “still want it?” check-in, odd stamps earned by behaviour, and a “second chance” coupon after a slip', 'Dropped an earlier direction for a “desk of paper” look (yellow desk, white receipts, red stamps, collage cut-outs); generated 96 item cut-outs with GPT ImageGen and redrew the icon', 'Built it with AI coding tools while owning the breakdown, decisions and review; made the store screenshots, preview video and header to Apple’s asset guidelines'],
+        ),
+      },
+    ],
+    tags: ['SwiftUI', 'SwiftData', 'WidgetKit', 'Live Activity', 'App Intents', 'Codex', 'Claude Code'],
+    links: [
+      { label: L('在 App Store 下载', 'Get it on the App Store'), href: 'https://apps.apple.com/app/id6814845346' },
+      { label: L('帮助与隐私', 'Help & privacy'), href: 'https://renleme.netlify.app' },
+    ],
+  },
   games: {
     kicker: L('PRESS START', 'PRESS START'),
     title: L('我喜欢的游戏', 'Games I love'),
@@ -162,7 +223,7 @@ export const PANELS = {
     body: L(['我开一台 2026 款保时捷帕拉梅拉，火山灰色。桌上那台 1:24 车模是银色的 911 GT3 Touring，我最喜欢的跑车。F1 里最喜欢的车手是维斯塔潘：杆位起步，一路领跑到终点。'], ['I drive a 2026 Porsche Panamera in Volcano Grey. The 1:24 model on the desk is a silver 911 GT3 Touring, my favourite sports car. My favourite F1 driver is Max Verstappen: pole to win.']),
     bullets: L(['我的车：2026 款保时捷帕拉梅拉 · 火山灰', '最喜欢的跑车：保时捷 911 · 银色', '最喜欢的车手：Max Verstappen'], ['My car: 2026 Porsche Panamera, Volcano Grey', 'Favourite sports car: Porsche 911, silver', 'Favourite driver: Max Verstappen']),
     tags: ['Porsche', 'F1'],
-    links: [{ label: L('F1 网站', 'F1 website'), action: 'project1' }],
+    links: [{ label: L('PitMind：F1 AI 搭子', 'PitMind: F1 AI companion'), action: 'project1' }],
   },
   review: {
     kicker: L('YEAR IN REVIEW', 'YEAR IN REVIEW'),
@@ -223,7 +284,7 @@ export const PANELS = {
     title: L('最近在做什么', 'What I am up to now'),
     sub: L('2026 年 10 月', 'October 2026'),
     body: L([], []),
-    bullets: L(['在做：腾讯 AI 产品经理', '在搭：这个网站和一个 F1 网站', '在等：小布到家'], ['Doing: AI product manager at Tencent', 'Building: this site and an F1 website', 'Waiting for: Xiaobu to move in']),
+    bullets: L(['在做：腾讯 AI 产品经理', '在搭：PitMind 和 AI 短片《假如那颗苹果》', '在等：小布到家'], ['Doing: AI product manager at Tencent', 'Building: PitMind and the AI short What If That Apple', 'Waiting for: Xiaobu to move in']),
     tags: [],
     links: [],
   },
@@ -295,7 +356,7 @@ export const CHAT = {
   fallback: L('这个我没准备台词。试试问：你是谁、做过什么项目、怎么联系你。', 'I don’t have a line for that. Try: who are you, what have you built, how to reach you.'),
   topics: [
     { id: 'who', keys: ['你是谁', '介绍', 'who', 'about', 'yourself', 'simon'], q: L('你是谁？', 'Who are you?'), a: L('我是 Simon，许子豪，在腾讯做 AI 产品经理。之前在字节跳动做 AgentCall 和 LLM 评测，在 Soul 做策略产品。工作之外是赛车迷和游戏玩家。', 'I’m Simon Xu, an AI product manager at Tencent. Before that I worked on AgentCall and LLM evaluation at ByteDance and on strategy products at Soul. Outside work: racing fan and gamer.'), panel: 'about' },
-    { id: 'projects', keys: ['项目', '做过', 'project', 'build', 'built'], q: L('你做过什么项目？', 'What have you built?'), a: L('三个：一个还没发布的 F1 网站、一部 AIGC 短片和一个 iOS App。桌上的三本刊物就是它们。', 'Three: an F1 website that hasn’t launched yet, an AIGC short film and an iOS app. They’re the three zines on the desk.'), panel: 'project1' },
+    { id: 'projects', keys: ['项目', '做过', 'project', 'build', 'built'], q: L('你做过什么项目？', 'What have you built?'), a: L('三个：给 F1 新球迷的 AI 搭子 PitMind（开发中）、AI 动画短片《假如那颗苹果》（粗剪中），和已经上架 App Store 的冲动刹车 App「忍了么」。桌上的三本刊物就是它们。', 'Three: PitMind, an AI race companion for new F1 fans (in development); What If That Apple, an AI-made animated short (rough cut); and RenLeMe, an impulse-pause app that’s live on the App Store. They’re the three zines on the desk.'), panel: 'project1' },
     { id: 'styles', keys: ['风格', '宇宙', 'style', 'universe', 'blender', '怎么做'], q: L('为什么有十种画风？', 'Why ten styles?'), a: L('同一张桌子在 Blender 里建模，一个机位渲出底色、光影和轮廓，再合成十种印刷风格。点桌上的面具，或者按空格，就换一个宇宙。', 'One desk modelled in Blender, one camera, rendered into colour, light and outline passes, then composited into ten print styles. Click the mask on the desk, or press Space, to jump universes.') },
     { id: 'contact', keys: ['联系', '邮箱', 'email', 'contact', 'reach'], q: L('怎么联系你？', 'How do I reach you?'), a: L('发邮件到 xuzihao1218@126.com，或者点桌上的名片。', 'Email xuzihao1218@126.com, or click the business card on the desk.'), panel: 'contact' },
   ],

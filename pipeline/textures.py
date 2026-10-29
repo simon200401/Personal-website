@@ -526,6 +526,32 @@ def zine(title, issue, tagline, bg, accent, motif, w=660, h=900):
         for k in range(6):
             x0, y0 = cx - r * 0.38 + (k % 3) * r * 0.27, cy - r * 0.6 + (k // 3) * r * 0.32
             d.rounded_rectangle((x0, y0, x0 + r * 0.2, y0 + r * 0.2), radius=12, fill=[RED, BLUE, YELLOW, GREEN, ORANGE, PINK][k])
+    elif motif == "apple":   # 《假如那颗苹果》：一颗红苹果正往下掉，砸向一顶假发
+        d.ellipse((cx - r * 0.8, cy + r * 0.35, cx + r * 0.8, cy + r * 1.0), fill=PAPER, outline=INK, width=8)   # 牛顿的白卷发
+        for k in range(5):
+            x = cx - r * 0.6 + k * r * 0.3
+            d.ellipse((x - 34, cy + r * 0.28, x + 34, cy + r * 0.6), fill=PAPER, outline=INK, width=6)
+        ax, ay, ar = cx, cy - r * 0.3, r * 0.42
+        d.ellipse((ax - ar, ay - ar, ax + ar, ay + ar * 0.9), fill=RED, outline=INK, width=8)
+        d.ellipse((ax - ar * 0.55, ay - ar * 0.6, ax - ar * 0.2, ay - ar * 0.25), fill=(255, 150, 150))
+        d.line((ax, ay - ar * 0.8, ax + 12, ay - ar * 1.35), fill=INK, width=10)
+        d.ellipse((ax + 12, ay - ar * 1.45, ax + 80, ay - ar * 1.1), fill=GREEN, outline=INK, width=5)
+        for k in (-1, 0, 1):   # 下落的速度线
+            d.line((ax + k * 40, ay - ar * 1.9, ax + k * 40, ay - ar * 1.5), fill=INK, width=6)
+        d.text((cx, cy + r * 0.18), "1666", font=font("black", 40), fill=INK, anchor="mm")
+    elif motif == "receipt":   # 忍了么：一张待付款小票，盖着红色「已忍住」章
+        d.polygon([(cx - r * 0.6, cy - r), (cx + r * 0.6, cy - r)] + [(cx + r * 0.6 - k * r * 0.12, cy + r * (0.92 if k % 2 else 1.0)) for k in range(11)], fill=PAPER, outline=INK)
+        d.text((cx, cy - r * 0.78), "UNPAID", font=font("black", 40), fill=INK, anchor="mm")
+        for k in range(5):
+            y = cy - r * 0.5 + k * r * 0.22
+            d.line((cx - r * 0.45, y, cx + r * 0.1, y), fill=INK, width=6)
+            d.line((cx + r * 0.25, y, cx + r * 0.45, y), fill=INK, width=6)
+        st = Image.new("RGBA", (300, 150), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(st)
+        sd.rounded_rectangle((6, 6, 294, 144), radius=18, outline=RED, width=10)
+        sd.text((150, 75), "已忍住", font=font("cjk", 80), fill=RED, anchor="mm")
+        st = st.rotate(14, expand=True, resample=Image.BICUBIC)
+        im.paste(st, (int(cx - st.width / 2 + 20), int(cy + r * 0.05)), st)
     elif motif == "notes":
         for i, c in enumerate(((255, 255, 255), (255, 244, 200), (255, 255, 255))):
             ox = (i - 1) * 46
@@ -727,9 +753,9 @@ def main(out):
         clipping(hl, sub, kind, 20 + i, text, h=820 if i % 2 == 0 else 760, image=image).save(out / f"clip_{i}.png")
     poster().save(out / "poster.png")
     # 桌上三本项目刊物（文件名不变，Blender 按文件名找贴图）
-    zine("F1 WEBSITE", 1, "COMING SOON.", (255, 122, 61), INK, "f1").save(out / "zine_echo.png")
-    zine("AIGC FILM", 2, "MADE WITH AI.", (88, 166, 255), RED, "film").save(out / "zine_roundtable.png")
-    zine("iOS APP", 3, "ON MY IPHONE.", (142, 78, 198), INK, "phone").save(out / "zine_athena.png")
+    zine("PITMIND", 1, "F1, EXPLAINED.", (255, 122, 61), INK, "f1").save(out / "zine_echo.png")
+    zine("WHAT IF?", 2, "THAT APPLE.", (88, 166, 255), RED, "apple").save(out / "zine_roundtable.png")
+    zine("RENLEME", 3, "PAUSE 15 SEC.", (255, 214, 64), INK, "receipt").save(out / "zine_athena.png")
     notebook().save(out / "notebook.png")
     screen().save(out / "screen.png")
     small_papers(out)
