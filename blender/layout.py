@@ -355,19 +355,20 @@ def cat(cx, cy, yaw):
     for f in bm.faces:
         f.smooth = True
     add("cat_body", bm, tex("tabby.png", rough=0.8), hot="cat", parent=root)
-    # 头：圆脸、腮帮宽，压在身子前上方
-    ball("cat_head", 0.038, (0, -0.052, 0.066), fur, scale=(1.18, 0.95, 0.92), hot="cat", parent=root)
+    # 头：圆脸、腮帮宽，压在身子前上方；整个头往上仰一点，从上往下看的镜头才看得到脸
+    head = empty("cat_head_root", (0, -0.052, 0.066), (R(-38), 0, 0), parent=root)
+    ball("cat_head", 0.038, (0, 0, 0), fur, scale=(1.18, 0.95, 0.92), hot="cat", parent=head)
     for sx in (-1, 1):
-        ear = (sx * 0.025, -0.050, 0.097)
-        cyl(f"cat_ear{sx}", 0.015, 0.026, ear, fur, r2=0.002, rot=(R(-8), sx * R(24), 0), seg=16, hot="cat", parent=root)
-        cyl(f"cat_ear_in{sx}", 0.0095, 0.018, (ear[0] - sx * 0.001, ear[1] - 0.004, ear[2] - 0.001), pink, r2=0.001, rot=(R(-8), sx * R(24), 0), seg=12, hot="cat", parent=root)
+        ear = (sx * 0.025, 0.002, 0.031)
+        cyl(f"cat_ear{sx}", 0.016, 0.028, ear, fur, r2=0.002, rot=(R(-8), sx * R(24), 0), seg=16, hot="cat", parent=head)
+        cyl(f"cat_ear_in{sx}", 0.0105, 0.020, (ear[0] - sx * 0.001, ear[1] - 0.0045, ear[2] - 0.001), pink, r2=0.001, rot=(R(-8), sx * R(24), 0), seg=12, hot="cat", parent=head)
         # 闭着的眼睛：两道向下弯的弧
-        torus(f"cat_eye{sx}", 0.0065, 0.0013, (sx * 0.017, -0.0875, 0.072), line, rot=(-math.pi / 2, 0, 0), arc=math.pi, seg=12, sub=5, hot="cat", parent=root)
-        # 白色的嘴套（两团）和胡须垫
-        ball(f"cat_muzzle{sx}", 0.010, (sx * 0.0075, -0.0865, 0.058), white, scale=(1.0, 0.8, 0.85), hot="cat", parent=root)
-        # 揣在胸前、露出一点的前爪
+        torus(f"cat_eye{sx}", 0.0075, 0.0016, (sx * 0.017, -0.0355, 0.006), line, rot=(-math.pi / 2, 0, 0), arc=math.pi, seg=12, sub=5, hot="cat", parent=head)
+        # 白色的嘴套（两团）
+        ball(f"cat_muzzle{sx}", 0.011, (sx * 0.008, -0.0345, -0.008), white, scale=(1.0, 0.8, 0.85), hot="cat", parent=head)
+    ball("cat_nose", 0.0048, (0, -0.0385, -0.002), pink, scale=(1.2, 0.8, 0.8), hot="cat", parent=head)
+    for sx in (-1, 1):   # 揣在胸前、露出一点的前爪
         ball(f"cat_paw{sx}", 0.010, (sx * 0.016, -0.052, 0.005), white, scale=(1.0, 1.2, 0.6), hot="cat", parent=root)
-    ball("cat_nose", 0.0042, (0, -0.0905, 0.064), pink, scale=(1.2, 0.8, 0.8), hot="cat", parent=root)
     tail = torus("cat_tail", 0.056, 0.0085, (0, 0.012, 0.008), fur, rot=(0, 0, R(-70)), arc=R(150), seg=28, sub=10, hot="cat", parent=root)
     tail.scale = (0.98, 1.38, 1.0)
 
