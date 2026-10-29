@@ -339,28 +339,37 @@ def build_left():
 
 
 def cat(cx, cy, yaw):
-    """一只团着睡觉的美国短毛猫：椭球身子、埋在前爪上的头、两只耳朵、绕到前面的尾巴，背上几道深色虎斑。"""
-    fur, dark, pink = M("cat_fur", "#b9bcc1", 0.8), M("cat_stripe", "#4b4e55", 0.8), M("cat_pink", "#e8a0a8", 0.6)
+    """小布：一只银色虎斑美短，「香箱座」揣着手趴在桌上睡觉。脸朝 -Y（朝镜头），圆脸大腮帮，
+    头压在身子前端，耳朵往两边微微撇开，尾巴沿右侧绕到前面。虎斑纹画在身子的贴图里（textures.py 的 tabby）。"""
+    fur, line, pink, white = M("cat_fur", "#c4c7cc", 0.8), M("cat_stripe", "#55585f", 0.8), M("cat_pink", "#eba3ad", 0.6), M("cat_white", "#eeece8", 0.8)
     root = empty("cat_root", (cx, cy, T), (0, 0, yaw))
     root.scale = (1.3, 1.3, 1.3)
-    bm = bmesh.new()   # 身子用带 UV 的球，虎斑纹画在贴图里（textures.py 的 tabby），分开的条纹物体在漫画描边里会变成一根根黑刺
+    bm = bmesh.new()   # 身子：长轴先沿 X 建（贴图的条纹按 X 画），再转到 Y；底部切平贴着桌面
     bm.loops.layers.uv.verify()
     bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0, calc_uvs=True)
-    bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, 0), plane_no=(0, 0, -1), clear_outer=True)
+    bmesh.ops.scale(bm, vec=(0.074, 0.050, 0.044), verts=bm.verts)
+    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / 2, 3, "Z"))
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(0, 0.012, 0.030))
+    bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, 0.001), plane_no=(0, 0, -1), clear_outer=True)
     bmesh.ops.holes_fill(bm, edges=bm.edges)
-    bmesh.ops.scale(bm, vec=(0.078, 0.058, 0.048), verts=bm.verts)
     for f in bm.faces:
         f.smooth = True
     add("cat_body", bm, tex("tabby.png", rough=0.8), hot="cat", parent=root)
-    ball("cat_head", 0.036, (-0.072, -0.024, 0.040), fur, scale=(1.0, 1.05, 0.85), hot="cat", parent=root)
-    for s_ in (-1, 1):
-        cyl(f"cat_ear{s_}", 0.012, 0.022, (-0.078, -0.024 + s_ * 0.020, 0.074), fur, r2=0.001, rot=(s_ * R(-18), R(-10), 0), seg=12, hot="cat", parent=root)
-        cyl(f"cat_ear_in{s_}", 0.007, 0.014, (-0.081, -0.024 + s_ * 0.020, 0.073), pink, r2=0.0005, rot=(s_ * R(-18), R(-10), 0), seg=10, hot="cat", parent=root)
-    torus("cat_tail", 0.062, 0.010, (0.0, 0.0, 0.006), fur, rot=(0, 0, R(200)), arc=math.pi * 0.9, seg=24, sub=10, hot="cat", parent=root)
-    for s_ in (-1, 1):   # 闭着的眼睛
-        torus(f"cat_eye{s_}", 0.007, 0.0012, (-0.104, -0.024 + s_ * 0.013, 0.050), dark, rot=(-math.pi / 2, 0, math.pi / 2), arc=math.pi, seg=10, sub=4, hot="cat", parent=root)
-    ball("cat_muzzle", 0.014, (-0.100, -0.026, 0.032), M("cat_white", "#e9e7e2", 0.8), scale=(0.7, 1.2, 0.8), hot="cat", parent=root)
-    ball("cat_nose", 0.005, (-0.106, -0.026, 0.036), pink, hot="cat", parent=root)
+    # 头：圆脸、腮帮宽，压在身子前上方
+    ball("cat_head", 0.038, (0, -0.052, 0.066), fur, scale=(1.18, 0.95, 0.92), hot="cat", parent=root)
+    for sx in (-1, 1):
+        ear = (sx * 0.025, -0.050, 0.097)
+        cyl(f"cat_ear{sx}", 0.015, 0.026, ear, fur, r2=0.002, rot=(R(-8), sx * R(24), 0), seg=16, hot="cat", parent=root)
+        cyl(f"cat_ear_in{sx}", 0.0095, 0.018, (ear[0] - sx * 0.001, ear[1] - 0.004, ear[2] - 0.001), pink, r2=0.001, rot=(R(-8), sx * R(24), 0), seg=12, hot="cat", parent=root)
+        # 闭着的眼睛：两道向下弯的弧
+        torus(f"cat_eye{sx}", 0.0065, 0.0013, (sx * 0.017, -0.0875, 0.072), line, rot=(-math.pi / 2, 0, 0), arc=math.pi, seg=12, sub=5, hot="cat", parent=root)
+        # 白色的嘴套（两团）和胡须垫
+        ball(f"cat_muzzle{sx}", 0.010, (sx * 0.0075, -0.0865, 0.058), white, scale=(1.0, 0.8, 0.85), hot="cat", parent=root)
+        # 揣在胸前、露出一点的前爪
+        ball(f"cat_paw{sx}", 0.010, (sx * 0.016, -0.052, 0.005), white, scale=(1.0, 1.2, 0.6), hot="cat", parent=root)
+    ball("cat_nose", 0.0042, (0, -0.0905, 0.064), pink, scale=(1.2, 0.8, 0.8), hot="cat", parent=root)
+    tail = torus("cat_tail", 0.056, 0.0085, (0, 0.012, 0.008), fur, rot=(0, 0, R(-70)), arc=R(150), seg=28, sub=10, hot="cat", parent=root)
+    tail.scale = (0.98, 1.38, 1.0)
 
 
 def build_center():
@@ -372,7 +381,7 @@ def build_center():
         tip = (x + rng.uniform(-0.012, 0.012), py + rng.uniform(0.0, 0.03), T + 0.17 + rng.uniform(-0.01, 0.02))
         rod(f"pen{i}", (x, py, T + 0.04), tip, 0.008, M(f"pen{i}", col, 0.4), seg=10)
     # 美短：银色虎斑，团成一团睡在笔架旁边
-    cat(0.33, 0.25, R(-25))
+    cat(0.33, 0.25, R(-12))
     # 蜘蛛面具：点它切换宇宙（致敬参考站）
     mx, my = 0.10, 0.05
     root = empty("mask_root", (mx, my, T + 0.002), (R(-14), 0, R(-10)))

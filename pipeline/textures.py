@@ -467,7 +467,7 @@ def tabby(w=1024, h=512):
     ph = np.linspace(np.pi / 2, -np.pi / 2, h)[:, None]
     x, y, z = np.cos(ph) * np.cos(th), np.cos(ph) * np.sin(th), np.sin(ph)
     im = np.empty((h, w, 3), np.float32)
-    im[:] = (185, 188, 193)
+    im[:] = (196, 199, 204)
     dark = np.zeros((h, w), bool)
     for c in (-0.5, -0.22, 0.06, 0.34, 0.62):   # 跨过脊背的条纹：x 等于常数的等值线，只画背上那一段
         dark |= (np.abs(x - c) < 0.035) & (z > 0.45)
@@ -475,7 +475,7 @@ def tabby(w=1024, h=512):
         cx, cy, cz = 0.1, sy * 0.88, 0.45
         dist = np.arccos(np.clip((x * cx + y * cy + z * cz) / math.sqrt(cx * cx + cy * cy + cz * cz), -1, 1))
         dark |= (np.abs(dist - 0.38) < 0.06) | (dist < 0.14)
-    im[dark] = (75, 78, 85)
+    im[dark] = (112, 116, 124)
     return Image.fromarray(im.astype(np.uint8))
 
 
