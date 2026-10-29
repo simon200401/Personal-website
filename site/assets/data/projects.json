@@ -1,0 +1,61 @@
+[
+ {
+  "title": "个人网站",
+  "tagline": "一张桌子，十个宇宙",
+  "description": "你正在看的这个网站：Blender 渲染的工位场景，十种画风，点物件看内容。",
+  "long": "基于 EdwinjJ1/personal-website（MIT）改造。场景用 Blender 脚本建模，分通道渲染后合成十种印刷风格，网页用 WebGL 切换。",
+  "highlights": [
+   "Blender 程序化建模 + 分通道渲染",
+   "十种画风实时切换",
+   "纯静态站，部署在 GitHub Pages"
+  ],
+  "metrics": [],
+  "tech": [
+   "Blender",
+   "WebGL",
+   "JavaScript"
+  ],
+  "category": "Web",
+  "status": "Ongoing",
+  "live": "",
+  "github": "https://github.com/simon200401/Personal-website",
+  "image": ""
+ },
+ {
+  "title": "项目二（占位）",
+  "tagline": "一句话介绍",
+  "description": "一两句话说明这个项目解决什么问题、你负责什么。",
+  "long": "",
+  "highlights": [
+   "亮点一",
+   "亮点二"
+  ],
+  "metrics": [],
+  "tech": [
+   "Python"
+  ],
+  "category": "AI & Automation",
+  "status": "Ongoing",
+  "live": "",
+  "github": "",
+  "image": ""
+ },
+ {
+  "title": "项目三（占位）",
+  "tagline": "一句话介绍",
+  "description": "一两句话说明这个项目解决什么问题、你负责什么。",
+  "long": "",
+  "highlights": [
+   "亮点一"
+  ],
+  "metrics": [],
+  "tech": [
+   "C++"
+  ],
+  "category": "Coursework",
+  "status": "Completed",
+  "live": "",
+  "github": "",
+  "image": ""
+ }
+]

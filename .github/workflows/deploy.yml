@@ -1,0 +1,49 @@
+# 部署 site/ 到 GitHub Pages。
+# 推到 main 时部署；另外每 6 小时跑一次，把最新的新闻和 GitHub 贡献墙放进当次部署（不往仓库里提交）。
+name: Deploy site
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["site/**", "pipeline/sync_news.py", "pipeline/sync_music.py", "pipeline/sync_github.py", ".github/workflows/deploy.yml"]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sync news
+        run: python3 pipeline/sync_news.py
+        continue-on-error: true
+      - name: Sync music (skipped until PLAYLIST_ID is set)
+        run: python3 pipeline/sync_music.py
+        continue-on-error: true
+      - name: Sync GitHub contributions (keeps the committed snapshot if the fetch fails)
+        run: python3 pipeline/sync_github.py
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

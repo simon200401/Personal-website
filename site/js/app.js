@@ -1,0 +1,1042 @@
+// 入口：状态、交互、面板（静态 + 从旧站导入的内容）、对话、阅读模式。画面交给 stage.js，坐标换算在 geometry.js。
+import { groupAlbums } from './albums.js';
+import { streamChat } from './chat.js';
+import { ALBUMS, APPLE_MUSIC, CHAT, DYNAMIC, HOTS, INTRO_ORDER, LABELS, NOTEBOOK, PANELS, STYLES, UI, appleEmbed, matchTopic } from './content.js?v=20261018-2';
+import * as G from './geometry.js?v=20261011-1';
+import { renderGithub, tipLabel } from './github.js';
+import { renderJournal } from './journal.js?v=20261012-2';
+import { coverUrl, createPlayer, fmtTime } from './music.js';
+import { renderNews } from './news.js';
+import { createStage, hexToRgb, styleUrl } from './stage.js?v=20261018-1';
+import { createTour } from './tour.js';
+import { CENTER as WEB_CENTER, earthOf, hostOf, webLayout } from './web.js';
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const el = (tag, cls, text) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text != null) node.textContent = text;
+  return node;
+};
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs) => {
+  const node = document.createElementNS(SVG_NS, tag);
+  Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+  return node;
+};
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 手机 / 触屏适配的三个开关，查询条件和 css/mobile.css 里的一一对应。桌面端（宽屏 + 鼠标）全都不成立，带它们的分支走不到。
+const touchUi = matchMedia('(hover: none), (pointer: coarse)');                                          // 主指针是手指：换提示语、闲时点名
+const mqDock = matchMedia('(max-width: 899px) and (orientation: portrait)');                             // 竖屏：底部实心控制栏 + 小地图
+const mqSide = matchMedia('(max-width: 899px) and (orientation: landscape) and (max-height: 500px)');    // 横过来的手机：面板在右侧
+const store = {
+  get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* 隐私模式下存不了就算了 */ } },
+};
+
+const journalSession = {
+  get: () => { try { return sessionStorage.getItem('journal-pw') || ''; } catch { return ''; } },
+  set: (v) => { try { sessionStorage.setItem('journal-pw', v); } catch { /* 存不了就每次重新输 */ } },
+  clear: () => { try { sessionStorage.removeItem('journal-pw'); } catch { /* 同上 */ } },
+};
+
+const dom = {
+  canvas: $('#stage'), fx: $('#fx'), loader: $('#loader'), loaderBar: $('#loader-bar'), loaderText: $('#loader-text'),
+  tip: $('#tip'), sfx: $('#sfx'), panel: $('#panel'), panelBody: $('#panel-body'), back: $('#back'),
+  earth: $('#earth'), dots: $('#dots'), hint: $('#hint'), intro: $('#intro'), introBody: $('#intro-body'),
+  btnDesk: $('#btn-desk'), btnIntro: $('#btn-intro'), btnLang: $('#btn-lang'), btnSound: $('#btn-sound'),
+  hudBottom: $('.hud-bottom'), map: $('#map'), mapView: $('#map-view'),
+};
+
+// 状态只通过 set() 换成新对象，不原地改
+let state = Object.freeze({
+  lang: store.get('lang', (navigator.language || '').startsWith('zh') ? 'zh' : 'en'),
+  style: 0, from: 0, t: 1, tStart: 0,
+  view: null, viewFrom: null, viewTo: null, viewStart: 0, viewDur: 0, viewBack: null,
+  hover: null, panel: null, mode: 'desk', sound: false, ready: false,
+});
+const set = (patch) => { state = Object.freeze({ ...state, ...patch }); };
+const tr = (pair) => pair[state.lang] ?? pair.zh;
+
+let scene = null;
+let img = null;
+let stage = null;
+let hotPixels = null;       // { data, w, h }
+let hotByIndex = [];
+let dock = 0;               // 竖屏手机底部控制栏的高度：画面只铺到它上沿（见 fitDock）。桌面和横屏恒为 0
+let under = 0;              // 竖屏手机上面板盖住了画面底部多高（见 fitSheet）。同样，桌面和横屏恒为 0
+const vp = () => ({ w: innerWidth, h: innerHeight - dock, under });
+const dpr = () => Math.min(devicePixelRatio || 1, 2);
+const homeView = () => G.clampView({ cx: img.w / 2, cy: img.h / 2, zoom: 1 }, vp(), img);
+
+// ───────────────────────── 声音（默认关） ─────────────────────────
+let audio = null;
+function blip(freq = 520, dur = 0.09, type = 'square') {
+  if (!state.sound) return;
+  audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audio.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audio.currentTime + dur);
+  gain.gain.setValueAtTime(0.06, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + dur);
+  osc.connect(gain).connect(audio.destination);
+  osc.start();
+  osc.stop(audio.currentTime + dur);
+}
+
+// ───────────────────────── 风格切换 ─────────────────────────
+function applyTheme() {
+  const s = STYLES[state.style];
+  const root = document.documentElement;
+  root.dataset.style = s.id;
+  root.style.setProperty('--ink', s.ink);
+  root.style.setProperty('--paper', s.paper);
+  root.style.setProperty('--accent', s.accent);
+  dom.earth.replaceChildren(el('b', null, s.earth), el('span', null, tr(s.name)));
+  [...dom.dots.children].forEach((d, i) => d.setAttribute('aria-current', i === state.style ? 'true' : 'false'));
+}
+
+function burst(text) {
+  const mask = scene.hots.mask;
+  const p = mask ? G.imageToScreen({ x: mask.center[0], y: mask.center[1] }, state.viewTo || state.view, vp(), img) : { x: innerWidth / 2, y: innerHeight / 2 };
+  dom.sfx.textContent = text;
+  dom.sfx.style.left = `${G.clamp(p.x, 120, innerWidth - 120)}px`;
+  dom.sfx.style.top = `${G.clamp(p.y - 70, 90, innerHeight - 90)}px`;
+  dom.sfx.classList.remove('go');
+  void dom.sfx.offsetWidth;   // 重新触发动画
+  dom.sfx.classList.add('go');
+}
+
+async function setStyle(index) {
+  const next = G.wrapIndex(index, STYLES.length);
+  if (next === state.style || state.t < 1) return;
+  await stage.loadStyle(STYLES[next].id);
+  set({ from: state.style, style: next, t: reduceMotion ? 1 : 0, tStart: performance.now() });
+  applyTheme();
+  burst(STYLES[next].sfx);
+  blip(300 + next * 60, 0.16, 'sawtooth');
+  wantHiRes();
+}
+
+/** 屏幕像素密度够高、或者镜头推近时，换上全尺寸贴图。 */
+function wantHiRes() {
+  const need = G.viewScale(state.viewTo || state.view, vp(), img) * dpr() * img.w > img.w / 2 * 1.15;
+  const id = STYLES[state.style].id;
+  if (need && !stage.has(id, true)) stage.loadStyle(id, true).then(() => stage.trim([id, STYLES[state.from].id]));
+}
+
+// ───────────────────────── 镜头 ─────────────────────────
+function flyTo(view, dur = 900) {
+  set({ viewFrom: state.view, viewTo: G.clampView(view, vp(), img), viewStart: performance.now(), viewDur: reduceMotion ? 1 : dur });
+  wantHiRes();
+}
+
+function panelLayout() {
+  const wide = innerWidth >= 900;
+  if (wide && dom.panel.classList.contains('wide')) {     // 贡献墙的面板更宽：物件放进面板左边剩下那块的正中
+    const free = innerWidth - dom.panel.offsetWidth - 48;
+    return { usable: { w: (free * 0.9) / innerWidth, h: 0.8 }, anchor: { x: (16 + free / 2) / innerWidth, y: 0.5 } };
+  }
+  if (!wide && mqSide.matches) return { usable: { w: 0.46, h: 0.62 }, anchor: { x: 0.26, y: 0.5 } };    // 横屏手机：面板占右边不到一半
+  if (!wide && dock) {      // 竖屏手机：面板从底下升上来，物件放在顶栏和面板之间那一截的正中
+    const h = innerHeight - dock;
+    const top = 60;
+    return { usable: { w: 0.9, h: ((h - under - top) / h) * 0.9 }, anchor: { x: 0.5, y: (top + h - under) / 2 / h } };
+  }
+  return wide ? { usable: { w: 0.56, h: 0.8 }, anchor: { x: 0.3, y: 0.5 } } : { usable: { w: 0.9, h: 0.4 }, anchor: { x: 0.5, y: 0.24 } };
+}
+
+// ───────────────────────── 面板 ─────────────────────────
+const safeUrl = (u) => (/^(https?:\/\/|mailto:)/.test(String(u)) ? u : '#');
+
+function extLink(cls, text, href) {
+  const a = el('a', cls, text);
+  a.href = safeUrl(href);
+  if (/^https?:/.test(a.href)) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+  return a;
+}
+
+function linkNode(link) {
+  if (link.action) {
+    const b = el('button', 'btn', tr(link.label));
+    b.type = 'button';
+    b.addEventListener('click', () => (link.action === 'intro' ? setMode('intro') : openPanel(link.action, scene?.hots[link.action] ? link.action : null)));
+    return b;
+  }
+  return extLink('btn', tr(link.label), link.href);
+}
+
+function listOf(items) {
+  const ul = el('ul');
+  items.forEach((t) => ul.append(el('li', null, t)));
+  return ul;
+}
+
+function figure(src, alt) {
+  const im = el('img', 'shot');
+  im.loading = 'lazy';
+  im.src = src;
+  im.alt = alt;
+  return im;
+}
+
+function cardHead(meta) {
+  const wrap = el('div', 'card');
+  wrap.append(el('p', 'kicker', tr(meta.kicker)), el('h2', null, tr(meta.title)), el('p', 'sub', tr(meta.sub)));
+  return wrap;
+}
+
+function staticContent(key) {
+  const p = PANELS[key];
+  const wrap = cardHead(p);
+  if (p.image) wrap.append(figure(tr(p.image.src), tr(p.image.alt)));
+  tr(p.body).forEach((t) => wrap.append(el('p', null, t)));
+  const items = tr(p.bullets);
+  if (items.length) wrap.append(listOf(items));
+  (p.sections || []).forEach((sec) => wrap.append(el('h3', 'section', tr(sec.heading)), listOf(tr(sec.items))));
+  if (p.tags.length) {
+    const tags = el('div', 'tags');
+    p.tags.forEach((t) => tags.append(el('span', null, t)));
+    wrap.append(tags);
+  }
+  if (p.links.length) {
+    const links = el('div', 'links');
+    p.links.forEach((l) => links.append(linkNode(l)));
+    wrap.append(links);
+  }
+  return wrap;
+}
+
+// ── 唱片机：播放器只有一个，面板关掉音乐也不断；面板只是它的一张脸 ──
+let player = null;
+let playerOff = null;       // 上一次面板的订阅，重画前先退掉
+const ICONS = {
+  play: 'M7 4v16l13-8z',
+  pause: 'M6 4h4v16H6zM14 4h4v16h-4z',
+  prev: 'M5 4h3v16H5zM20 4v16L9 12z',
+  next: 'M16 4h3v16h-3zM4 4v16l11-8z',
+  shuffle: 'M3 6h4l9 12h5v2h-6L6 8H3zM3 16h4l2-2.6 1.3 1.7L8 18H3zM13.7 8.9 16 6h5v2h-4l-2 2.6zM19 3l4 4-4 4zM19 13l4 4-4 4z',
+};
+function iconButton(cls, icon, label, onClick) {
+  const b = el('button', cls);
+  b.type = 'button';
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  const svg = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' });
+  const path = svgEl('path', { d: ICONS[icon] });
+  svg.append(path);
+  b.append(svg);
+  b.addEventListener('click', onClick);
+  return { b, path };
+}
+function slider(cls, label, max, onInput) {
+  const input = el('input', `range ${cls}`);
+  input.type = 'range';
+  input.min = '0';
+  input.max = String(max);
+  input.step = max > 1 ? '1' : '0.01';
+  input.setAttribute('aria-label', label);
+  input.addEventListener('input', () => onInput(Number(input.value)));
+  return input;
+}
+
+// ── 从旧站导入的内容：项目 / 博客 / 摄影 / 新闻 / 友链 ──
+const dataCache = new Map();
+function getData(file) {
+  if (!dataCache.has(file)) dataCache.set(file, fetch(`assets/data/${file}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`data_${r.status}`)))));
+  return dataCache.get(file);
+}
+
+let lightbox = null;   // { close, step }
+function openLightbox(items, start) {
+  lightbox?.close();
+  const box = el('div', 'lightbox');
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  const img = el('img');
+  const cap = el('figcaption');
+  const fig = el('figure');
+  fig.append(img, cap);
+  const mk = (cls, text, label, fn) => { const b = el('button', `pill ${cls}`, text); b.type = 'button'; b.setAttribute('aria-label', label); b.addEventListener('click', fn); return b; };
+  let index = start;
+  const show = (i) => {
+    index = G.wrapIndex(i, items.length);
+    const p = items[index];
+    img.src = `assets/photos/${p.id}.webp`;
+    img.alt = [p.title, p.location].filter(Boolean).join(' · ');
+    cap.replaceChildren(el('strong', null, p.title), el('span', null, [p.location, p.date, p.camera, p.settings].filter(Boolean).join(' · ')), el('span', 'desc', p.description || ''));
+  };
+  const close = () => { box.remove(); lightbox = null; };
+  box.append(mk('lb-close', '✕', tr(UI.close), close), mk('lb-prev', '←', tr(UI.prev), () => show(index - 1)), fig, mk('lb-next', '→', tr(UI.next), () => show(index + 1)));
+  box.addEventListener('click', (ev) => { if (ev.target === box) close(); });
+  document.body.append(box);
+  lightbox = { close, step: (d) => show(index + d) };
+  show(start);
+  box.querySelector('.lb-close').focus();
+}
+
+function articleNodes(text) {
+  // 博客正文是很轻的 Markdown：标题、列表、段落。全部走 textContent。
+  return String(text).split(/\n{2,}/).map((block) => {
+    const lines = block.trim().split('\n');
+    if (/^#{1,4}\s/.test(lines[0])) return el('h3', null, lines[0].replace(/^#{1,4}\s*/, ''));
+    if (lines.every((l) => /^\s*([-*]|\d+\.)\s/.test(l))) {
+      const ul = el('ul');
+      lines.forEach((l) => ul.append(el('li', null, l.replace(/^\s*([-*]|\d+\.)\s*/, ''))));
+      return ul;
+    }
+    return el('p', null, lines.join(' ').replace(/\*\*|`/g, ''));
+  });
+}
+
+const RENDER = {
+  projects(body, items) {
+    items.forEach((p) => {
+      const item = el('article', 'entry');
+      if (p.image) item.append(figure(`assets/projects/${p.image}`, p.title));
+      item.append(el('h3', null, p.title), el('p', 'meta', [p.status, p.category].filter(Boolean).join(' · ')));
+      if (p.tagline) item.append(el('p', 'sub', p.tagline));
+      item.append(el('p', null, p.long || p.description));
+      if (p.metrics.length) {
+        const stats = el('dl', 'stats');
+        p.metrics.forEach((m) => { const cell = el('div'); cell.append(el('dt', null, m.label), el('dd', null, m.value)); stats.append(cell); });
+        item.append(stats);
+      }
+      if (p.highlights.length) item.append(listOf(p.highlights));
+      const tags = el('div', 'tags');
+      p.tech.forEach((t) => tags.append(el('span', null, t)));
+      const links = el('div', 'links');
+      if (p.live) links.append(extLink('btn small', 'Live', p.live));
+      if (p.github) links.append(extLink('btn small', 'GitHub', p.github));
+      item.append(tags, links);
+      body.append(item);
+    });
+  },
+  blog(body, posts) {
+    const list = () => {
+      body.replaceChildren(...posts.map((post) => {
+        const b = el('button', 'entry entry-btn');
+        b.type = 'button';
+        b.append(el('h3', null, post.title), el('p', 'meta', [post.date, post.readTime, (post.language || '').toUpperCase()].filter(Boolean).join(' · ')), el('p', null, post.excerpt));
+        b.addEventListener('click', () => read(post));
+        return b;
+      }));
+    };
+    const read = (post) => {
+      const back = el('button', 'btn small', tr(UI.backToList));
+      back.type = 'button';
+      back.addEventListener('click', list);
+      const art = el('article', 'article');
+      art.append(el('h3', 'article-title', post.title), el('p', 'meta', [post.date, post.readTime].filter(Boolean).join(' · ')), ...articleNodes(post.content));
+      body.replaceChildren(back, art);
+      body.closest('.panel-body, .intro')?.scrollTo?.({ top: 0 });
+    };
+    list();
+  },
+  // 日记：加密存在 Worker 里，输对密码才读得到；密码只放在这个标签页的 sessionStorage 里，关掉就忘。逻辑都在 journal.js
+  journal(body) {
+    return renderJournal(body, { el, lang: () => state.lang }, { api: CHAT.api, session: journalSession });
+  },
+  // 摄影按合集翻：每个合集先只露一张封面，点开才是这一组的全部照片（分组在 albums.js）。
+  photos(body, items) {
+    const albums = groupAlbums(items, ALBUMS);
+    const count = (album) => tr(UI.photoCount).replace('{n}', album.photos.length);
+    const thumb = (p) => {
+      const im = el('img');
+      im.loading = 'lazy';
+      im.alt = '';
+      im.src = `assets/photos/${p.id}-t.webp`;
+      im.width = p.w;
+      im.height = p.h;
+      return im;
+    };
+    const toTop = () => { const scroller = body.closest('.panel-body'); if (scroller) scroller.scrollTop = 0; };
+    const list = () => {
+      const grid = el('div', 'album-grid');
+      albums.forEach((album) => {
+        const b = el('button', 'album');
+        b.type = 'button';
+        b.setAttribute('aria-label', `${tr(album.name)} · ${count(album)}`);
+        b.append(thumb(album.cover), el('strong', null, tr(album.name)), el('span', null, count(album)));
+        b.addEventListener('click', () => open(album));
+        grid.append(b);
+      });
+      body.replaceChildren(grid);
+      toTop();
+    };
+    const open = (album) => {
+      const back = el('button', 'btn small', tr(UI.backToAlbums));
+      back.type = 'button';
+      back.addEventListener('click', list);
+      const grid = el('div', 'photo-grid');
+      album.photos.forEach((p, i) => {
+        const b = el('button', 'photo');
+        b.type = 'button';
+        b.setAttribute('aria-label', [p.title, p.location].filter(Boolean).join(' · '));
+        b.append(thumb(p));
+        b.addEventListener('click', () => openLightbox(album.photos, i));
+        grid.append(b);
+      });
+      body.replaceChildren(back, el('h3', 'album-title', `${tr(album.name)} · ${count(album)}`), grid);
+      toTop();
+      back.focus({ preventScroll: true });
+    };
+    list();
+  },
+  // 新闻：顶部月历 + 按天加载，都在 news.js 里；data（各分类最近的新闻）是档案加载不到时的退路
+  news(body, data) {
+    renderNews(body, data, { el, extLink, lang: () => state.lang });
+  },
+  // 黑胶唱片机。设了 APPLE_MUSIC 就直接嵌 Apple Music 的播放器；否则歌单是 music.json，出声的是 music.js 里的播放器。
+  music(body, data) {
+    const embed = appleEmbed(APPLE_MUSIC);
+    if (embed) {
+      const frame = el('iframe', 'apple-music');
+      Object.assign(frame, { src: embed, title: 'Apple Music', loading: 'lazy' });
+      frame.setAttribute('allow', 'autoplay *; encrypted-media *; clipboard-write');
+      frame.setAttribute('sandbox', 'allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation');
+      body.append(frame, extLink('btn small', 'Apple Music', APPLE_MUSIC));
+      return;
+    }
+    if (!data.tracks.length) { body.append(el('p', null, tr(UI.musicEmpty))); return; }
+    player = player || createPlayer(new Audio());
+    if (!player.state.tracks.length) player.load(data.tracks);
+    playerOff?.();
+
+    const deck = el('div', 'deck');
+    const disc = el('div', 'disc');
+    const label = el('img', 'disc-label');
+    label.alt = '';
+    label.referrerPolicy = 'no-referrer';
+    disc.append(label, el('i', 'disc-hole'));
+    const arm = el('div', 'arm');
+    arm.append(el('i'));
+    const platter = el('div', 'platter');
+    platter.append(disc);
+    const rig = el('div', 'rig');
+    rig.append(platter, arm);
+    deck.append(rig, el('span', 'deck-rpm', '33⅓ RPM'));
+    deck.setAttribute('aria-hidden', 'true');
+
+    const title = el('h3', 'now-title');
+    const artist = el('p', 'meta now-artist');
+    const note = el('p', 'now-note', tr(UI.musicBlocked));
+    const seek = slider('seek', tr(UI.musicSeek), 100, (v) => player.seek(v));
+    const cur = el('span', null, '0:00');
+    const dur = el('span', null, '0:00');
+    const times = el('div', 'now-times');
+    times.append(cur, seek, dur);
+
+    const shuffle = iconButton('ctl', 'shuffle', tr(UI.musicShuffle), () => player.setShuffle(!player.state.shuffle));
+    const prev = iconButton('ctl', 'prev', tr(UI.musicPrev), () => player.step(-1));
+    const toggle = iconButton('ctl ctl-main', 'play', tr(UI.musicPlay), () => player.toggle());
+    const next = iconButton('ctl', 'next', tr(UI.musicNext), () => player.step(1));
+    const volume = slider('volume', tr(UI.musicVolume), 1, (v) => player.setVolume(v));
+    const controls = el('div', 'controls');
+    controls.append(shuffle.b, prev.b, toggle.b, next.b, volume);
+
+    const crate = el('ol', 'crate');
+    const rows = data.tracks.map((t, i) => {
+      const b = el('button', 'crate-row');
+      b.type = 'button';
+      b.append(el('span', 'crate-no', String(i + 1).padStart(2, '0')), el('strong', null, t.title), el('span', 'crate-by', t.artist), el('span', 'crate-len', fmtTime(t.duration)));
+      b.addEventListener('click', () => (player.state.index === i ? player.toggle() : player.play(i)));
+      const li = el('li');
+      li.append(b);
+      crate.append(li);
+      return b;
+    });
+    const count = tr(UI.musicCount).replace('{n}', data.tracks.length).replace('{total}', data.playlist.total);
+    body.append(deck, title, artist, note, times, controls, el('h3', 'section', tr(UI.musicCrate)), el('p', 'meta', `${data.playlist.name} · ${count}`), crate, extLink('btn small', tr(UI.musicOpen), data.playlist.url));
+
+    let shown = { index: null, dead: null };
+    const draw = (s) => {
+      const t = s.tracks[s.index];
+      if (s.index !== shown.index) {
+        title.textContent = t ? t.title : tr(UI.musicIdle);
+        artist.textContent = t ? [t.artist, t.album].filter(Boolean).join(' · ') : data.playlist.name;
+        label.src = coverUrl((t || s.tracks[0]).cover, 200);
+        rows.forEach((b, i) => b.setAttribute('aria-current', String(i === s.index)));
+        if (t && 'mediaSession' in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: t.album, artwork: t.cover ? [{ src: coverUrl(t.cover, 300), sizes: '300x300', type: 'image/jpeg' }] : [] });
+      }
+      if (s.dead !== shown.dead) rows.forEach((b, i) => { b.disabled = s.dead.includes(i); });
+      shown = { index: s.index, dead: s.dead };
+      deck.classList.toggle('on', s.playing);
+      deck.classList.toggle('cue', s.playing || s.loading);
+      note.hidden = !s.blocked;
+      toggle.path.setAttribute('d', ICONS[s.playing || s.loading ? 'pause' : 'play']);
+      toggle.b.setAttribute('aria-label', tr(s.playing ? UI.musicPause : UI.musicPlay));
+      shuffle.b.setAttribute('aria-pressed', String(s.shuffle));
+      seek.max = String(Math.max(1, Math.round(s.duration)));
+      if (!seek.matches(':active')) seek.value = String(Math.round(s.time));      // 正在拖的时候别抢
+      seek.style.setProperty('--p', `${s.duration ? Math.min(100, (s.time / s.duration) * 100) : 0}%`);
+      volume.value = String(s.volume);
+      volume.style.setProperty('--p', `${s.volume * 100}%`);
+      cur.textContent = fmtTime(s.time);
+      dur.textContent = fmtTime(s.duration);
+    };
+    playerOff = player.subscribe(draw);
+    draw(player.state);
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('previoustrack', () => player.step(-1));
+      navigator.mediaSession.setActionHandler('nexttrack', () => player.step(1));
+    }
+  },
+  // GitHub 贡献墙：一整年的格子图，点格子去 GitHub 看那一天。排格子、算连续天数都在 github.js
+  github(body, data) {
+    renderGithub(body, data, { el, svg: svgEl, extLink, lang: () => state.lang, open: (url) => window.open(url, '_blank', 'noopener,noreferrer'), touch: () => touchUi.matches, reduceMotion });
+  },
+  // 友链画成一张蛛网：我在中心，每个朋友是一根蛛丝另一头的宇宙。布局算法在 web.js。
+  friends(body, items) {
+    const layout = webLayout(items.length);
+    const svg = svgEl('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' });
+    const strand = (p, cls) => svgEl('line', { x1: WEB_CENTER, y1: WEB_CENTER, x2: p.x, y2: p.y, class: cls });
+    const threads = layout.nodes.map((p) => [strand(p, 'web-thread'), strand(p, 'web-live')]);
+    svg.append(...layout.rings.map((d) => svgEl('path', { d, class: 'web-ring' })), ...layout.spokes.map((p) => strand(p, 'web-spoke')), ...threads.flat());
+
+    const nodes = el('ul', 'web-nodes');
+    const info = el('div', 'web-info');
+    info.append(el('p', 'web-hint', tr(UI.webHint)));
+    let picked = -1;
+    let pointer = 'mouse';
+    const pick = (i) => {
+      if (i === picked) return;
+      picked = i;
+      const f = items[i];
+      [...nodes.children].forEach((li, k) => li.firstChild.classList.toggle('on', k === i));
+      threads.forEach((pair, k) => pair.forEach((line) => line.classList.toggle('on', k === i)));
+      info.replaceChildren(el('p', 'meta', [earthOf(f.link), hostOf(f.link)].filter(Boolean).join(' · ')), el('strong', null, f.name), el('span', 'sum', f.desc), extLink('btn small', tr(UI.visit), f.link));
+      blip(880, 0.03, 'sine');
+    };
+    items.forEach((f, i) => {
+      const li = el('li');
+      li.style.left = `${layout.nodes[i].x}%`;
+      li.style.top = `${layout.nodes[i].y}%`;
+      li.style.setProperty('--i', i);
+      const a = extLink('web-node', '', f.link);
+      a.setAttribute('aria-label', `${f.name} · ${f.desc}`);
+      a.append(el('span', 'web-orb', [...f.name][0].toUpperCase()), el('span', 'web-name', f.name));
+      a.addEventListener('pointerdown', (ev) => { pointer = ev.pointerType; });
+      a.addEventListener('pointerenter', (ev) => { if (ev.pointerType === 'mouse') pick(i); });
+      a.addEventListener('focus', () => { if (a.matches(':focus-visible')) pick(i); });
+      // 触屏没有悬停：第一下先看简介，第二下（或者点下面的按钮）才跳走
+      a.addEventListener('click', (ev) => { if (pointer === 'touch' && picked !== i) ev.preventDefault(); pick(i); });
+      li.append(a);
+      nodes.append(li);
+    });
+    const hub = el('span', 'web-hub', 'EVAN');
+    hub.setAttribute('aria-hidden', 'true');
+    const web = el('div', 'web');
+    web.append(svg, hub, nodes);
+    body.append(web, info);
+  },
+};
+
+function dynamicContent(key) {
+  const meta = DYNAMIC[key];
+  const wrap = cardHead(meta);
+  const body = el('div', `dyn dyn-${key}`);
+  wrap.append(body);
+  (meta.file ? getData(meta.file) : Promise.resolve(null)).then((data) => RENDER[key](body, data)).catch(() => body.append(el('p', null, tr(UI.loadFailed))));
+  return wrap;
+}
+
+const panelContent = (key) => (DYNAMIC[key] ? dynamicContent(key) : staticContent(key));
+
+let chatAbort = null;
+function chatContent() {
+  const wrap = el('div', 'card chat');
+  wrap.append(el('p', 'kicker', 'TALK TO ME'));
+  const log = el('div', 'chat-log');
+  log.setAttribute('aria-live', 'polite');
+  let history = [];
+  const say = (who, text) => {
+    const node = el('p', `msg ${who}`, text);
+    log.append(node);
+    log.scrollTop = log.scrollHeight;
+    return node;
+  };
+  const ask = async (text, hint) => {
+    const topic = hint || matchTopic(text);
+    say('you', text);     // textContent，不会把输入当 HTML
+    history = [...history, { role: 'user', content: text }];
+    const bubble = say('me', tr(UI.thinking));
+    bubble.classList.add('pending');
+    chatAbort?.abort();
+    chatAbort = new AbortController();
+    let reply = '';
+    try {
+      if (!CHAT.api) throw new Error('no_api');     // 还没部署 Worker：直接用预设回答
+      await streamChat(CHAT.api, history, (delta) => {
+        reply += delta;
+        bubble.textContent = reply;
+        bubble.classList.remove('pending');
+        log.scrollTop = log.scrollHeight;
+      }, chatAbort.signal);
+      if (!reply) throw new Error('empty_reply');
+    } catch (err) {
+      if (err.name === 'AbortError') { bubble.remove(); return; }
+      reply = topic ? tr(topic.a) : tr(CHAT.fallback);     // 模型连不上：退回预设回答，并且说明白
+      bubble.textContent = `${reply} ${tr(UI.offline)}`;
+      bubble.classList.remove('pending');
+    }
+    history = [...history, { role: 'assistant', content: reply }];
+    if (topic?.panel) {
+      const more = el('button', 'btn small', `${tr(UI.more)} → ${tr((DYNAMIC[topic.panel] || PANELS[topic.panel]).title)}`);
+      more.type = 'button';
+      more.addEventListener('click', () => openPanel(topic.panel, null));
+      log.append(more);
+      log.scrollTop = log.scrollHeight;
+    }
+    blip(660, 0.06);
+  };
+  say('me', tr(CHAT.hello));
+  const chips = el('div', 'chips');
+  CHAT.topics.filter((topic) => topic.suggested !== false).forEach((topic) => {
+    const b = el('button', 'chip', tr(topic.q));
+    b.type = 'button';
+    b.addEventListener('click', () => ask(tr(topic.q), topic));
+    chips.append(b);
+  });
+  const form = el('form', 'chat-form');
+  const input = el('input');
+  input.type = 'text';
+  input.maxLength = 500;
+  input.placeholder = tr(UI.chatPlaceholder);
+  input.setAttribute('aria-label', tr(UI.chatPlaceholder));
+  const send = el('button', 'btn', tr(UI.send));
+  form.append(input, send);
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    ask(text, null);
+  });
+  wrap.append(log, chips, form);
+  return wrap;
+}
+
+/** 面板里放什么。笔记本那两个面板（博客、日记）顶上多一排按钮来回切，镜头不动；阅读模式里它们本来就上下挨着，不加。 */
+function panelNode(key) {
+  if (key === 'chat') return chatContent();
+  const card = panelContent(key);
+  if (!NOTEBOOK.includes(key)) return card;
+  const tabs = el('div', 'chips');
+  NOTEBOOK.forEach((k) => {
+    const b = el('button', 'chip', tr(DYNAMIC[k].title));
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(k === key));
+    b.addEventListener('click', () => { if (k !== key) openPanel(k, null); });
+    tabs.append(b);
+  });
+  card.querySelector('.dyn').before(tabs);
+  return card;
+}
+
+/** 现在是桌面、面板还是阅读模式。只有 mobile.css 用它决定底栏里留什么。 */
+const syncUi = () => { document.documentElement.dataset.ui = state.mode === 'intro' ? 'intro' : state.panel ? 'panel' : 'desk'; };
+
+function openPanel(key, hotName) {
+  tour.stop();
+  dom.panel.classList.toggle('wide', Boolean(DYNAMIC[key]?.wide));
+  dom.panelBody.replaceChildren(panelNode(key));
+  dom.panel.hidden = false;
+  dom.panelBody.scrollTop = 0;
+  set({ panel: key, hover: null, viewBack: state.panel ? state.viewBack : state.viewTo || state.view });
+  syncUi();
+  fitSheet();
+  dom.tip.hidden = true;
+  const hot = hotName && scene.hots[hotName];
+  if (hot) flyTo(G.viewForBBox(hot.bbox, vp(), img, panelLayout()));
+  dom.back.focus({ preventScroll: true });
+  blip(440, 0.07);
+}
+
+function closePanel() {
+  if (!state.panel) return;
+  chatAbort?.abort();
+  dom.panel.hidden = true;
+  const back = dock && state.viewBack ? state.viewBack : homeView();     // 竖屏没有“全景”可回：回到打开面板之前看的那一截
+  set({ panel: null, viewBack: null });
+  syncUi();
+  fitSheet();
+  flyTo(back, 800);
+  idleTour(TOUR_REST);
+}
+
+function activate(name) {
+  const hot = HOTS[name];
+  if (!hot) return;
+  if (hot.action === 'style') setStyle(state.style + 1);
+  else if (hot.action === 'chat') openPanel('chat', 'monitor');
+  else openPanel(hot.panel, name);
+}
+
+// ───────────────────────── 阅读模式 ─────────────────────────
+function renderIntro() {
+  const head = el('header', 'intro-head');
+  head.append(el('p', 'kicker', tr(UI.introTitle)), el('h1', null, tr(PANELS.about.title)), el('p', 'sub', tr(PANELS.about.sub)));
+  dom.introBody.replaceChildren(head, ...INTRO_ORDER.map(panelContent));
+}
+
+function setMode(mode) {
+  set({ mode });
+  dom.intro.hidden = mode !== 'intro';
+  dom.btnDesk.setAttribute('aria-pressed', String(mode === 'desk'));
+  dom.btnIntro.setAttribute('aria-pressed', String(mode === 'intro'));
+  if (mode === 'intro') {
+    dom.panel.hidden = true;
+    set({ panel: null, hover: null, viewBack: null });
+    renderIntro();
+    dom.intro.scrollTop = 0;
+  }
+  syncUi();
+  fitDock();
+  fitSheet();
+  if (dock) refit();      // 竖屏带着面板进阅读模式：把抬起来的画面放回去
+  if (mode === 'desk') idleTour(TOUR_REST);
+  else tour.stop();
+}
+
+/** 「DESK 探索」这类按钮字：第一个词之后的部分包一层，窄屏由 mobile.css 收起来，顶栏才排得成一行。 */
+function splitLabel(btn, text) {
+  const [head, ...rest] = text.split(' ');
+  btn.replaceChildren(head, el('span', 'pill-more', rest.length ? ` ${rest.join(' ')}` : ''));
+  btn.setAttribute('aria-label', text);
+}
+
+function applyLang() {
+  document.documentElement.lang = state.lang === 'zh' ? 'zh-CN' : 'en';
+  splitLabel(dom.btnDesk, tr(UI.desk));
+  splitLabel(dom.btnIntro, tr(UI.intro));
+  dom.btnLang.textContent = state.lang === 'zh' ? 'EN' : '中文';
+  dom.btnSound.textContent = state.sound ? '♪ ON' : '♪ OFF';
+  dom.btnSound.setAttribute('aria-label', tr(state.sound ? UI.soundOn : UI.soundOff));
+  dom.back.textContent = tr(UI.back);
+  dom.hint.textContent = tr(touchUi.matches ? UI.hintTouch : UI.hint);
+  dom.loaderText.textContent = tr(UI.loading);
+  dom.canvas.setAttribute('aria-label', tr(UI.canvasLabel));
+  if (scene) applyTheme();
+  if (state.mode === 'intro') renderIntro();
+  if (state.panel) dom.panelBody.replaceChildren(panelNode(state.panel));
+}
+
+// ───────────────────────── 指针 ─────────────────────────
+/** slop：点偏多少屏幕像素以内也算点中。鼠标是 0，只认指针正下方；手指给一点余量。 */
+function hotAt(clientX, clientY, slop = 0) {
+  if (!hotPixels) return null;
+  const p = G.screenToImage({ x: clientX, y: clientY }, state.view, vp(), img);
+  const k = hotPixels.w / img.w;
+  const idx = G.hotIndexNear(hotPixels.data, hotPixels.w, hotPixels.h, p.x * k, (p.y / img.h) * hotPixels.h, (slop / G.viewScale(state.view, vp(), img)) * k);
+  return hotByIndex[idx] || null;
+}
+
+/** 悬停 / 点名时的标签。贡献城的数据到了就带上过去一年的总数，没到就是 LABELS 里的固定文案。 */
+let ghData = null;
+const labelOf = (name) => (name === 'github' && ghData ? tipLabel(ghData, state.lang) : tr(LABELS[name]));
+
+function showTip(name, x, y) {
+  if (!name) { dom.tip.hidden = true; return; }
+  dom.tip.textContent = labelOf(name);
+  dom.tip.hidden = false;
+  dom.tip.style.left = `${G.clamp(x + 18, 8, innerWidth - dom.tip.offsetWidth - 8)}px`;
+  dom.tip.style.top = `${G.clamp(y + 20, 8, innerHeight - 48)}px`;
+}
+
+// ── 触屏没有悬停：闲下来的时候把视野里的物件挨个描边、报名字（排队和计时在 tour.js） ──
+const TOUR_REST = 2600;     // 手停下多久之后开始点名
+const TOUCH_SLOP = 14;      // 手指点偏这么多屏幕像素以内也算点中
+const TOUCH_DRAG = 10;      // 手指挪过这么多才算拖动（鼠标是 6）
+let named = null;           // 正在点名的热点
+
+/** 点名时的标签：小物件贴在它正下方，大物件放在中心偏下；左右不出屏。 */
+function nameTip(name) {
+  const hot = scene.hots[name];
+  const size = vp();
+  const c = G.imageToScreen({ x: hot.center[0], y: hot.center[1] }, state.view, size, img);
+  const foot = G.imageToScreen({ x: hot.center[0], y: hot.bbox[3] }, state.view, size, img).y;
+  dom.tip.textContent = labelOf(name);
+  dom.tip.hidden = false;
+  dom.tip.style.left = `${G.clamp(c.x - dom.tip.offsetWidth / 2, 8, size.w - dom.tip.offsetWidth - 8)}px`;
+  dom.tip.style.top = `${G.clamp(Math.min(foot + 8, c.y + 36), 8, size.h - dom.tip.offsetHeight - 8)}px`;
+}
+
+const tour = createTour({
+  step: 1800,
+  // 顶栏盖住的地方不点；横屏时底栏也浮在画面上，同样让开
+  list: () => G.hotsInView(scene.hots, state.view, vp(), img, { top: 64, right: 16, bottom: dock ? 44 : 76, left: 16 }),
+  idle: () => state.mode === 'desk' && !state.panel && !state.viewTo && !lightbox,
+  show(name) { named = name; set({ hover: name }); nameTip(name); },
+  hide() { named = null; set({ hover: null }); dom.tip.hidden = true; },
+});
+const idleTour = (delay) => { if (touchUi.matches && state.ready) tour.start(delay); };
+const inRect = (r, ev) => ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
+
+function bindPointer() {
+  const pointers = new Map();
+  let drag = null;      // { x, y, view, moved, slop, pick }
+  let pinch = null;     // { dist, mid }：两指的间距和中点
+  const twoFingers = () => {
+    const [a, b] = [...pointers.values()];
+    return { dist: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+  };
+
+  dom.canvas.addEventListener('pointerdown', (ev) => {
+    dom.canvas.setPointerCapture(ev.pointerId);
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    const touch = ev.pointerType === 'touch';
+    // 点名的标签不接事件，手指落在标签上也算点它那个物件
+    const pick = touch && named && !dom.tip.hidden && inRect(dom.tip.getBoundingClientRect(), ev) ? named : null;
+    drag = { x: ev.clientX, y: ev.clientY, view: state.view, moved: false, slop: touch ? TOUCH_DRAG : 6, pick };
+    if (touch) {      // 手指按下：停掉点名，把按住的物件描出来，松手前就知道点的是谁
+      tour.stop();
+      set({ hover: pointers.size === 1 && state.mode === 'desk' ? pick || hotAt(ev.clientX, ev.clientY, TOUCH_SLOP) : null });
+    }
+    if (pointers.size === 2) pinch = twoFingers();
+  });
+
+  dom.canvas.addEventListener('pointermove', (ev) => {
+    if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (pointers.size === 2 && pinch?.dist) {        // 双指：缩放，同时跟着两指的中点平移
+      const now = twoFingers();
+      const s = G.viewScale(state.view, vp(), img);
+      const slid = { ...state.view, cx: state.view.cx - (now.mid.x - pinch.mid.x) / s, cy: state.view.cy - (now.mid.y - pinch.mid.y) / s };
+      set({ view: G.zoomAt(slid, now.dist / pinch.dist, now.mid, vp(), img), viewTo: null });
+      pinch = now;
+      if (drag) drag.moved = true;
+      return;
+    }
+    if (drag && pointers.size === 1) {
+      const dx = ev.clientX - drag.x;
+      const dy = ev.clientY - drag.y;
+      if (Math.hypot(dx, dy) > drag.slop) drag.moved = true;
+      if (drag.moved) {
+        const s = G.viewScale(drag.view, vp(), img);
+        set({ view: G.clampView({ ...drag.view, cx: drag.view.cx - dx / s, cy: drag.view.cy - dy / s }, vp(), img), viewTo: null, hover: null });
+        dom.tip.hidden = true;
+        return;
+      }
+    }
+    if (ev.pointerType === 'mouse' && state.mode === 'desk') {
+      const name = hotAt(ev.clientX, ev.clientY);
+      if (name !== state.hover) {
+        set({ hover: name });
+        dom.canvas.style.cursor = name ? 'pointer' : 'grab';
+        if (name) blip(880, 0.03, 'sine');
+      }
+      showTip(name, ev.clientX, ev.clientY);
+    }
+  });
+
+  const end = (ev) => {
+    const touch = ev.pointerType === 'touch';
+    const wasDrag = drag?.moved;
+    const pick = drag?.pick;
+    pointers.delete(ev.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (pointers.size === 1 && drag) {      // 双指抬起一根：剩下那根从它现在的位置接着拖，不然画面会跳一下
+      const [p] = [...pointers.values()];
+      drag = { ...drag, x: p.x, y: p.y, view: state.view, moved: true };
+    }
+    if (pointers.size === 0) {
+      drag = null;
+      if (touch) set({ hover: null });
+      if (!wasDrag && ev.type === 'pointerup' && state.mode === 'desk') {
+        const name = pick || hotAt(ev.clientX, ev.clientY, touch ? TOUCH_SLOP : 0);
+        if (name) activate(name);
+        else if (state.panel) closePanel();
+      }
+      if (touch) {
+        wantHiRes();
+        idleTour(TOUR_REST);
+      }
+    }
+  };
+  dom.canvas.addEventListener('pointerup', end);
+  dom.canvas.addEventListener('pointercancel', end);
+  dom.canvas.addEventListener('pointerleave', () => { set({ hover: null }); dom.tip.hidden = true; });
+  dom.canvas.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    set({ view: G.zoomAt(state.view, Math.exp(-ev.deltaY * 0.0016), { x: ev.clientX, y: ev.clientY }, vp(), img), viewTo: null });
+    wantHiRes();
+  }, { passive: false });
+}
+
+function bindKeys() {
+  addEventListener('keydown', (ev) => {
+    if (ev.target instanceof HTMLInputElement || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (lightbox) {      // 看图时方向键翻页、Esc 关闭，不切宇宙
+      if (ev.key === 'Escape') lightbox.close();
+      else if (ev.key === 'ArrowRight') lightbox.step(1);
+      else if (ev.key === 'ArrowLeft') lightbox.step(-1);
+      return;
+    }
+    if (ev.key === 'Escape') { state.mode === 'intro' ? setMode('desk') : closePanel(); return; }
+    if (state.mode !== 'desk') return;
+    if (ev.key === ' ') { ev.preventDefault(); setStyle(state.style + 1); }
+    else if (ev.key === 'ArrowRight') setStyle(state.style + 1);
+    else if (ev.key === 'ArrowLeft') setStyle(state.style - 1);
+    else if (/^[0-9]$/.test(ev.key)) setStyle(ev.key === '0' ? 9 : Number(ev.key) - 1);
+  });
+}
+
+// ───────────────────────── 手机：底栏和小地图 ─────────────────────────
+const refit = () => { if (state.view) set({ view: G.clampView(state.viewTo || state.view, vp(), img), viewTo: null }); };
+
+/** 竖屏时量一下底栏有多高，画面让出这一截（mobile.css 用 --dock 收画布）；其余情况是 0，什么都不改。 */
+function fitDock() {
+  dom.map.hidden = !mqDock.matches;
+  const next = mqDock.matches ? dom.hudBottom.offsetHeight : 0;
+  if (next === dock) return;
+  dock = next;
+  document.documentElement.style.setProperty('--dock', `${dock}px`);
+  fitSheet();
+  refit();
+}
+
+/** 竖屏时面板从底下升上来盖住画面下半截：量出盖了多高，镜头才知道能把画面抬多少。不在这里 refit，开合面板时让镜头自己飞过去。 */
+function fitSheet() {
+  under = dock && state.panel ? Math.max(0, innerHeight - dock - dom.panel.offsetTop - dom.panelBody.offsetTop) : 0;
+}
+
+// 小地图：竖屏只看得到桌子的一截，底栏里放整张桌子的缩略图，框出现在这一截；点或拖它直接过去
+let mapShown = { id: '', rect: '' };
+function syncMap() {
+  if (dom.map.hidden) return;
+  const id = STYLES[state.style].id;
+  const r = G.viewRect(state.view, vp(), img);
+  const rect = [r.x, r.y, r.w, r.h].map((v) => `${(v * 100).toFixed(2)}%`);
+  if (id === mapShown.id && rect.join() === mapShown.rect) return;
+  if (id !== mapShown.id) dom.map.style.backgroundImage = `url("${styleUrl(id)}")`;
+  mapShown = { id, rect: rect.join() };
+  const [left, top, width, height] = rect;
+  Object.assign(dom.mapView.style, { left, top, width, height });
+}
+
+function bindMap() {
+  const seek = (ev) => {
+    const box = dom.map.getBoundingClientRect();
+    const x = (ev.clientX - box.left - dom.map.clientLeft) / dom.map.clientWidth;
+    const y = (ev.clientY - box.top - dom.map.clientTop) / dom.map.clientHeight;
+    set({ view: G.clampView({ ...state.view, cx: x * img.w, cy: y * img.h }, vp(), img), viewTo: null });
+  };
+  dom.map.addEventListener('pointerdown', (ev) => {
+    dom.map.setPointerCapture(ev.pointerId);
+    tour.stop();
+    seek(ev);
+  });
+  dom.map.addEventListener('pointermove', (ev) => { if (dom.map.hasPointerCapture(ev.pointerId)) seek(ev); });
+  dom.map.addEventListener('pointerup', () => { wantHiRes(); idleTour(TOUR_REST); });
+}
+
+// ───────────────────────── 每帧 ─────────────────────────
+const rain = [];
+function drawFx(time) {
+  const c = dom.fx;
+  const ctx = c.getContext('2d');
+  const { w, h } = vp();
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  ctx.clearRect(0, 0, w, h);
+  if (STYLES[state.style].id !== 'noir' || reduceMotion || state.mode !== 'desk') return;
+  while (rain.length < 140) rain.push({ x: Math.random() * w * 1.2, y: Math.random() * h, v: 900 + Math.random() * 700, l: 14 + Math.random() * 26 });
+  ctx.strokeStyle = 'rgba(240,238,230,0.5)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  rain.forEach((d) => {
+    const y = (d.y + (time / 1000) * d.v) % (h + 60) - 30;
+    const x = d.x - (y / h) * w * 0.12;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - d.l * 0.14, y + d.l);
+  });
+  ctx.stroke();
+}
+
+function frame(now) {
+  if (state.t < 1) set({ t: Math.min(1, (now - state.tStart) / 850) });
+  if (state.viewTo) {
+    const k = Math.min(1, (now - state.viewStart) / state.viewDur);
+    set(k >= 1 ? { view: state.viewTo, viewTo: null } : { view: G.lerpView(state.viewFrom, state.viewTo, G.easeInOut(k)) });
+  }
+  const size = vp();
+  if (!(size.w > 0 && size.h > 0)) { requestAnimationFrame(frame); return; }   // 面板被隐藏时视口是 0，先不画
+  stage.resize(size, dpr());
+  stage.draw({
+    a: STYLES[state.from].id, b: STYLES[state.style].id, t: state.t,
+    view: state.view, scale: G.viewScale(state.view, size, img) * dpr(), time: now / 1000,
+    hover: state.hover && state.mode === 'desk' ? scene.hots[state.hover].index : 0,
+    hi: hexToRgb(STYLES[state.style].accent),
+  });
+  drawFx(now);
+  syncMap();
+  requestAnimationFrame(frame);
+}
+
+// ───────────────────────── 启动 ─────────────────────────
+function progress(p) {
+  dom.loaderBar.style.width = `${Math.round(p * 100)}%`;
+}
+
+function buildHud() {
+  STYLES.forEach((s, i) => {
+    const b = el('button', 'dot');
+    b.type = 'button';
+    b.style.setProperty('--c', s.accent);
+    b.title = `${s.earth} · ${s.name.en}`;
+    b.setAttribute('aria-label', `${s.earth} ${s.name.en}`);
+    b.addEventListener('click', () => setStyle(i));
+    dom.dots.append(b);
+  });
+  dom.btnDesk.addEventListener('click', () => setMode('desk'));
+  dom.btnIntro.addEventListener('click', () => setMode('intro'));
+  dom.btnLang.addEventListener('click', () => { set({ lang: state.lang === 'zh' ? 'en' : 'zh' }); store.set('lang', state.lang); applyLang(); });
+  dom.btnSound.addEventListener('click', () => { set({ sound: !state.sound }); applyLang(); blip(660, 0.1); });
+  dom.back.addEventListener('click', closePanel);
+  addEventListener('resize', () => { fitDock(); fitSheet(); refit(); idleTour(TOUR_REST); });
+  if ('ResizeObserver' in window) new ResizeObserver(fitDock).observe(dom.hudBottom);     // 字体换好、换语言都可能让底栏变高
+  fitDock();
+}
+
+async function boot() {
+  applyLang();
+  buildHud();
+  try {
+    scene = await (await fetch('assets/scene.json?v=20261018-1')).json();
+    img = { w: scene.width, h: scene.height };
+    hotByIndex = Object.entries(scene.hots).reduce((arr, [name, h]) => { const next = arr.slice(); next[h.index] = name; return next; }, []);
+    stage = createStage(dom.canvas, img);
+    progress(0.2);
+    const hotImg = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = 'assets/hot.png?v=20261018-1'; });
+    const cv = document.createElement('canvas');
+    cv.width = hotImg.width;
+    cv.height = hotImg.height;
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    cx.drawImage(hotImg, 0, 0);
+    hotPixels = { data: cx.getImageData(0, 0, cv.width, cv.height).data, w: cv.width, h: cv.height };
+    stage.setHot(hotImg);
+    progress(0.5);
+    await stage.loadStyle(STYLES[0].id);
+    progress(1);
+    fitDock();
+    set({ view: homeView(), ready: true });
+    applyTheme();
+    bindPointer();
+    bindMap();
+    bindKeys();
+    requestAnimationFrame(frame);
+    dom.loader.classList.add('done');
+    wantHiRes();
+    idleTour(TOUR_REST);
+    getData('github').then((data) => { ghData = data; }).catch(() => { /* 拿不到就用固定标签 */ });
+    STYLES.slice(1).reduce((p, s) => p.then(() => stage.loadStyle(s.id)), Promise.resolve());   // 其余九个宇宙后台慢慢载
+  } catch (err) {
+    console.error(err);
+    dom.loaderText.textContent = '3D 场景加载失败，已切到阅读模式。';
+    dom.loader.classList.add('done');
+    setMode('intro');
+  }
+}
+
+boot();
