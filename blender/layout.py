@@ -2,7 +2,7 @@
 
 俯视机位、铺满物件、墙上软木板 + 剪报，右侧黑钢框落地窗外是楼群。
 每个可点的东西带 hot 名字，前端按它开面板：
-  board / press / monitor / keyboard / mask（切换宇宙）/ zine-1 / zine-2 / zine-3 / zine-4（四个项目）
+  board / press / monitor / keyboard / mask（切换宇宙）/ zine-1 / zine-2 / zine-3（三个项目）
   notebook（博客）/ phone / plant（兴趣）/ camera + photos（摄影）/ badge（工作）/ news（报纸）/ games（手柄）
   music（唱片）/ contact（名片）/ fries / cars（显示器前的赛道和保时捷）/ calendar（年度回顾）/ globe（去过的地方）
   movies（电影票根）/ cards（卡片盒：认知积累）/ cat（美短）/ now（NOW 便签）
@@ -329,6 +329,7 @@ def build_left():
     # 两张电影票根（喜欢的电影和剧）
     decal("ticket_a", 0.13, 0.055, (-0.50, -0.42), "ticket_0.png", yaw=9, hot="movies", thick=0.0006, edge="#f2e6c8")
     decal("ticket_b", 0.13, 0.055, (-0.47, -0.36), "ticket_1.png", yaw=-14, z=0.0012, hot="movies", thick=0.0006, edge="#f2e6c8")
+    decal("ticket_c", 0.13, 0.055, (-0.52, -0.31), "ticket_2.png", yaw=4, z=0.0024, hot="movies", thick=0.0006, edge="#f2e6c8")
     # 工牌（工作 / 实习）
     bx, by, yaw = -0.14, 0.07, 14
     box("badge", (0.075, 0.105, 0.004), (bx, by, T + 0.004), M("badge", "#ffffff", 0.5), rot=(0, 0, R(yaw)), hot="badge")
@@ -466,7 +467,6 @@ def build_right():
     # 刊物三本，扇形摊开
     decal("zine_roundtable", 0.205, 0.28, (0.50, -0.05), "zine_roundtable.png", yaw=-13, hot="zine-2", thick=0.006)
     decal("zine_athena", 0.205, 0.28, (0.71, -0.17), "zine_athena.png", yaw=9, hot="zine-3", thick=0.006, z=0.008)
-    decal("zine_preuni", 0.205, 0.28, (0.50, -0.34), "zine_preuni.png", yaw=-3, hot="zine-4", thick=0.006)
     # 手机：协作看板，点击打开项目一
     box("phone_body", (0.082, 0.172, 0.009), (0.86, -0.39, T + 0.0045), M("phone", "#111216", 0.3), rot=(0, 0, R(-18)), hot="phone")
     plane("phone_screen", 0.074, 0.159, (0.86, -0.39, T + 0.0096), tex("phone.png", emit=0.8, rough=0.2), rot=(-math.pi / 2, 0, R(-18)), hot="phone", surface="phone")

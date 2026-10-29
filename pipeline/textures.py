@@ -205,7 +205,7 @@ def board(w=2400, h=1176):
         d.ellipse((x - r, y - r, x + r, y + r), fill=rng.choice([(176, 120, 66, 150), (232, 184, 124, 130), (150, 98, 52, 120)]))
 
     # 标题条：WHO IS / SIMON?
-    for txt, col, cx, cy, ang, fs in (("WHO IS", PAPER, 880, 150, 3, 96), ("SIMON?", YELLOW, 1300, 162, -3, 108)):
+    for txt, col, cx, cy, ang, fs in (("WHO IS", PAPER, 945, 150, 3, 84), ("SIMON?", YELLOW, 1345, 160, -3, 92)):
         f = font("marker", fs)
         tw = int(d.textlength(txt, font=f)) + 56
         strip = card(tw, fs + 36, col, border=4, seed=fs)
@@ -220,11 +220,11 @@ def board(w=2400, h=1176):
     nd.text((280, 220), "S I M O N   X U", font=font("din", 46), fill=INK, anchor="mm")
     nd.rectangle((60, 252, 500, 255), fill=INK)
     nd.text((280, 284), "知 行 合 一", font=font("cjk", 34), fill=RED, anchor="mm")
-    nd.text((280, 320), "SCHOOL · CITY", font=font("mono", 19), fill=INK, anchor="mm")   # TODO
+    nd.text((280, 320), "AI PRODUCT MANAGER", font=font("mono", 19), fill=INK, anchor="mm")
     stick(im, name, (1160, 470), -1.5)
 
     # 拍立得
-    stick(im, polaroid("bars", "project one", 11), (250, 250), -7)
+    stick(im, polaroid("city", "shanghai", 11), (250, 250), -7)
     stick(im, polaroid("city", "my city", 12), (590, 230), 5)
     stick(im, polaroid("city", "on the road", 13, size=250), (700, 560), -4)
 
@@ -234,8 +234,8 @@ def board(w=2400, h=1176):
         lines_text(ImageDraw.Draw(s), (22, 20), text, name_, fs, fill)
         return s
 
-    stick(im, sticky("NOW:\nwhat I'm\nworking on\n(TODO)", YELLOW, (330, 250), 40), (250, 640), 4)
-    stick(im, sticky("2025 - SCHOOL\n2026 - INTERN\n2026 - BUILDING\n       THINGS\n(TODO)", (196, 228, 255), (320, 230), 27, "mono"), (410, 930), -3)
+    stick(im, sticky("NOW:\nAI PM at\nTencent", YELLOW, (330, 250), 44), (250, 640), 4)
+    stick(im, sticky("2023 EASYTRANSFER\n2024 BDO\n2025 DELOITTE\n2026 SOUL\n2026 BYTEDANCE\n2026 TENCENT", (196, 228, 255), (320, 230), 25, "mono"), (410, 930), -3)
     motto = card(330, 170, PINK, seed=36)
     ImageDraw.Draw(motto).text((165, 85), "知行合一", font=font("cjk", 72), fill=INK, anchor="mm")
     stick(im, motto, (1010, 800), 3)
@@ -244,12 +244,12 @@ def board(w=2400, h=1176):
     td.text((150, 39), "LIGHTS OUT!", font=fit(td, "LIGHTS OUT!", "impact", 270, 46), fill=INK, anchor="mm")
     stick(im, tag, (1340, 760), -5)
 
-    # WHAT I CAN BUILD
+    # WHAT I'M INTO
     wc = card(520, 520, (255, 252, 244), border=8, seed=21)
     wd = ImageDraw.Draw(wc)
     wd.rectangle((8, 8, 511, 96), fill=INK)
-    wd.text((260, 52), "WHAT I CAN BUILD", font=font("impact", 54), fill=PAPER, anchor="mm")
-    for i, (a, b) in enumerate((("SKILL ONE", "what it covers"), ("SKILL TWO", "what it covers"), ("SKILL THREE", "what it covers"), ("SKILL FOUR", "what it covers"))):   # TODO
+    wd.text((260, 52), "WHAT I'M INTO", font=font("impact", 54), fill=PAPER, anchor="mm")
+    for i, (a, b) in enumerate((("AI PRODUCTS", "agents · LLM evaluation"), ("F1 & PORSCHE", "pole to win"), ("GAMES", "zelda · god of war · wukong"), ("FILMS", "interstellar · fight club"))):
         y = 122 + i * 96
         wd.text((34, y), f"0{i + 1}", font=font("black", 40), fill=RED)
         wd.text((118, y - 2), a, font=font("din", 46), fill=INK)
@@ -261,11 +261,11 @@ def board(w=2400, h=1176):
     mc = card(230, 320, (255, 255, 255), border=6, seed=31)
     md = ImageDraw.Draw(mc)
     md.rectangle((6, 6, 223, 84), fill=INK)
-    md.text((115, 46), "WORK", font=font("black", 50), fill=PAPER, anchor="mm")   # TODO：公司或学校缩写
+    md.text((115, 46), "TENCENT", font=fit(md, "TENCENT", "black", 200, 50), fill=PAPER, anchor="mm")
     for gx, gy in ((2, 0), (3, 0), (1, 1), (2, 1), (3, 1), (1, 2), (3, 2), (0, 3), (2, 2), (3, 3), (2, 3)):
         md.rectangle((66 + gx * 26, 108 + gy * 26, 66 + gx * 26 + 24, 108 + gy * 26 + 24), fill=INK)
-    md.text((115, 246), "YOUR ROLE", font=font("din", 34), fill=INK, anchor="mm")
-    md.text((115, 284), "2026 · CITY", font=font("mono", 18), fill=RED, anchor="mm")
+    md.text((115, 246), "AI PM", font=font("din", 34), fill=INK, anchor="mm")
+    md.text((115, 284), "2026 · SHENZHEN", font=font("mono", 18), fill=RED, anchor="mm")
     stick(im, mc, (2240, 330), -4)
     cx, cy, r = 2210, 690, 118
     pts = [(cx + math.cos(i * math.pi / 14) * (r if i % 2 else r * 0.86), cy + math.sin(i * math.pi / 14) * (r if i % 2 else r * 0.86)) for i in range(28)]
@@ -396,7 +396,7 @@ def calendar(w=1080, h=820, year=None):
         for k in range(28):
             gx, gy = x0 + 22 + (k % 7) * 30, y0 + 66 + (k // 7) * 26
             d.rectangle((gx, gy, gx + 18, gy + 14), fill=(222, 216, 204))
-        if i in (1, 6, 9):   # TODO：换成你这一年里重要的月份
+        if i in (1, 4, 9):   # 2 月 Soul、5 月字节跳动、10 月腾讯
             d.ellipse((x0 + 8, y0 + 4, x0 + 112, y0 + 62), outline=RED, width=5)
     return im
 
@@ -493,7 +493,7 @@ def now_note(w=380, h=320):
     s = card(w, h, YELLOW, seed=44)
     d = ImageDraw.Draw(s)
     d.text((24, 16), "NOW", font=font("marker", 76), fill=RED)
-    lines_text(d, (26, 120), "doing: ...\nlearning: ...\nplaying: ...", "marker", 38)   # TODO
+    lines_text(d, (26, 120), "AI PM @ Tencent\nbuilding: F1 site\nwaiting: Xiaobu", "marker", 34)
     return s
 
 
@@ -534,6 +534,30 @@ def zine(title, issue, tagline, bg, accent, motif, w=660, h=900):
             d.ellipse((cx + s * 78 - 62, cy - 90, cx + s * 78 + 62, cy + 34), fill=PAPER, outline=INK, width=8)
             d.ellipse((cx + s * 78 - 24, cy - 52, cx + s * 78 + 24, cy - 4), fill=INK)
         d.polygon([(cx - 26, cy + 30), (cx + 26, cy + 30), (cx, cy + 86)], fill=ORANGE, outline=INK)
+    elif motif == "f1":
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(14, 27, 64))
+        for k in range(8):
+            if k % 2 == 0:
+                d.rectangle((cx - r * 0.7 + k * r * 0.175, cy - r * 0.62, cx - r * 0.7 + (k + 1) * r * 0.175, cy - r * 0.45), fill=PAPER)
+        f1_car(d, cx - r * 0.82, cy + r * 0.42, r * 1.64, (30, 46, 110), RED, YELLOW)
+    elif motif == "film":
+        d.rectangle((cx - r, cy - r * 0.62, cx + r, cy + r * 0.62), fill=INK)
+        for k in range(9):
+            x = cx - r + 14 + k * (2 * r - 28) / 8
+            for yy_ in (cy - r * 0.55, cy + r * 0.47):
+                d.rectangle((x - 9, yy_, x + 9, yy_ + 16), fill=PAPER)
+        for k in range(3):
+            x0 = cx - r + 26 + k * (2 * r - 52) / 3
+            d.rectangle((x0 + 6, cy - r * 0.36, x0 + (2 * r - 52) / 3 - 6, cy + r * 0.36), fill=[(255, 170, 196), (88, 166, 255), (255, 214, 64)][k])
+        d.polygon([(cx - 40, cy - 56), (cx - 40, cy + 56), (cx + 58, cy)], fill=PAPER, outline=INK)
+        d.text((cx, cy + r * 0.82), "AI", font=font("black", 60), fill=INK, anchor="mm")
+    elif motif == "phone":
+        d.rounded_rectangle((cx - r * 0.55, cy - r, cx + r * 0.55, cy + r), radius=46, fill=INK)
+        d.rounded_rectangle((cx - r * 0.47, cy - r * 0.9, cx + r * 0.47, cy + r * 0.9), radius=32, fill=PAPER)
+        d.rounded_rectangle((cx - 40, cy - r * 0.86, cx + 40, cy - r * 0.76), radius=12, fill=INK)
+        for k in range(6):
+            x0, y0 = cx - r * 0.38 + (k % 3) * r * 0.27, cy - r * 0.6 + (k // 3) * r * 0.32
+            d.rounded_rectangle((x0, y0, x0 + r * 0.2, y0 + r * 0.2), radius=12, fill=[RED, BLUE, YELLOW, GREEN, ORANGE, PINK][k])
     elif motif == "notes":
         for i, c in enumerate(((255, 255, 255), (255, 244, 200), (255, 255, 255))):
             ox = (i - 1) * 46
@@ -634,9 +658,7 @@ def phone(w=470, h=1010):
     d.rounded_rectangle((26, 700, w - 26, 772), radius=22, outline=(120, 122, 130), width=3)
     d.text((w / 2, 736), "新任务", font=font("cjk", 32), fill=PAPER, anchor="mm")
     d.ellipse((w / 2 - 76, h - 216, w / 2 + 76, h - 64), fill=RED)
-    for i, k in enumerate((0.4, 0.75, 0.5)):
-        bx = w / 2 + (i - 1) * 34
-        d.rounded_rectangle((bx - 10, h - 140 - 56 * k, bx + 10, h - 140 + 56 * k), radius=10, fill=PAPER)
+    d.text((w / 2, h - 140), "S", font=font("impact", 110), fill=PAPER, anchor="mm")
     d.text((w / 2, h - 34), "一起完成", font=font("cjk", 26), fill=(170, 172, 180), anchor="mm")
     return im
 
@@ -649,11 +671,10 @@ def small_papers(out):
     c = card(700, 400, (255, 255, 255), border=6, seed=50)
     d = ImageDraw.Draw(c)
     d.rectangle((6, 6, 180, 393), fill=INK)
-    for i, k in enumerate((0.4, 0.75, 0.5)):
-        d.rounded_rectangle((60 + i * 34 - 11, 200 - 110 * k, 60 + i * 34 + 11, 200 + 110 * k), radius=11, fill=PAPER)
+    d.text((93, 200), "S", font=font("impact", 220), fill=PAPER, anchor="mm")
     d.text((216, 70), "SIMON XU", font=font("black", 64), fill=INK)
-    d.text((216, 150), "Your tagline here", font=font("mono", 30), fill=INK)   # TODO
-    d.text((216, 236), "you@example.com", font=font("mono", 28), fill=RED)   # TODO
+    d.text((216, 150), "AI Product Manager", font=font("mono", 30), fill=INK)
+    d.text((216, 236), "xuzihao1218@126.com", font=font("mono", 28), fill=RED)
     d.text((216, 282), "github.com/simon200401", font=font("mono", 28), fill=INK)
     d.text((216, 328), "simon200401.github.io", font=font("mono", 28), fill=INK)
     c.save(out / "bizcard.png")
@@ -745,25 +766,24 @@ def facade(seed, wall, w=512, h=1024, cols=10, rows=26):
 def main(out):
     out.mkdir(parents=True, exist_ok=True)
     board().save(out / "board.png")
-    # TODO：墙上四张剪报，写你真实的经历（标题、副标题、配图类型、正文）
+    # 墙上四张剪报：几段经历里最值得贴出来的事
     clips = [
-        ("FIRST PROJECT SHIPPED", "headline subtitle goes here", "notes", None,
-         "CITY — Replace this clipping with something you did: a project you finished, a competition, a talk or a milestone. A few sentences in the style of a news story."),
-        ("A YEAR IN REVIEW", "what this year taught me", "notes", None,
-         "CITY — A short look back: the places you went, what you learned and the moment you remember most from this year."),
-        ("MEET SIMON XU", "student · builder · photographer", "person", avatar(),
-         "CITY — A short profile: who you are, where you study or work, and what you care about. This sits next to the poster on the wall."),
-        ("NEXT UP", "what I'm working on now", "podium", None,
-         "CITY — Describe what you are building or learning right now, and what you hope to do next."),
+        ("AGENTCALL GOES LIVE", "ByteDance · 2026", "notes", None,
+         "SHANGHAI — An outbound-calling agent workflow now covers 80% of scenarios, lifting merchant conversion intent by 15.7%. A simulated merchant passed double-blind tests 98% of the time."),
+        ("INTENT ACCURACY: 73% TO 90%", "LLM evaluation · 2026", "notes", None,
+         "SHANGHAI — A four-dimension evaluation system with multi-agent review, a new taxonomy, prompt tuning and SFT pushed intent recognition from 73.3% to 90.5%."),
+        ("MEET SIMON XU", "AI product manager · racing fan", "person", avatar(),
+         "SHENZHEN — Six internships in four years, from data analysis and ESG to AI agents. Drives a Panamera, follows Verstappen, and is about to adopt a cat called Xiaobu."),
+        ("DWELL TIME UP 34.7%", "Soul App · 2026", "podium", None,
+         "SHANGHAI — A tag-and-feedback matching framework and a careful A/B rollout raised average time per room entry by 34.7%, with every core metric up."),
     ]
     for i, (hl, sub, kind, image, text) in enumerate(clips):
         clipping(hl, sub, kind, 20 + i, text, h=820 if i % 2 == 0 else 760, image=image).save(out / f"clip_{i}.png")
     poster().save(out / "poster.png")
-    # TODO：桌上四本项目刊物（文件名不变，Blender 按文件名找贴图）
-    zine("PROJECT 1", 1, "WHAT IT DOES.", (255, 122, 61), INK, "bars").save(out / "zine_echo.png")
-    zine("PROJECT 2", 2, "WHAT IT DOES.", (88, 166, 255), RED, "table").save(out / "zine_roundtable.png")
-    zine("PROJECT 3", 3, "WHAT IT DOES.", (142, 78, 198), INK, "owl").save(out / "zine_athena.png")
-    zine("PROJECT 4", 4, "WHAT IT DOES.", (48, 164, 108), INK, "notes").save(out / "zine_preuni.png")
+    # 桌上三本项目刊物（文件名不变，Blender 按文件名找贴图）
+    zine("F1 WEBSITE", 1, "COMING SOON.", (255, 122, 61), INK, "f1").save(out / "zine_echo.png")
+    zine("AIGC FILM", 2, "MADE WITH AI.", (88, 166, 255), RED, "film").save(out / "zine_roundtable.png")
+    zine("iOS APP", 3, "ON MY IPHONE.", (142, 78, 198), INK, "phone").save(out / "zine_athena.png")
     notebook().save(out / "notebook.png")
     screen().save(out / "screen.png")
     phone().save(out / "phone.png")
@@ -775,9 +795,10 @@ def main(out):
     panamera_rear().save(out / "panamera_rear.png")
     calendar().save(out / "calendar.png")
     cards_label().save(out / "cards_label.png")
-    # TODO：两张电影票根，写你喜欢的电影或剧
-    ticket("MOVIE ONE", "why I love it", 1, BLUE).save(out / "ticket_0.png")
-    ticket("MOVIE TWO", "why I love it", 2, RED).save(out / "ticket_1.png")
+    # 三张电影票根：最喜欢的三部
+    ticket("INTERSTELLAR", "do not go gentle", 1, BLUE).save(out / "ticket_0.png")
+    ticket("FIGHT CLUB", "first rule: ...", 2, RED).save(out / "ticket_1.png")
+    ticket("SPIDER-VERSE", "anyone can wear the mask", 3, (142, 78, 198)).save(out / "ticket_2.png")
     newspaper().save(out / "newspaper.png")
     brick(w=3320, h=2200, bw=118, bh=44, gap=6).save(out / "brick.png")
     wood().save(out / "wood.png")
