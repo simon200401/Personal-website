@@ -288,7 +288,7 @@ def porsche(name, loc, yaw, paint, hot=None, length=0.105):
 
 def build_track():
     """显示器前面的 1:24 车模：黑色亚克力展台，台面一条格子旗纹，正面铭牌；上面是 26 款帕拉梅拉，火山灰。"""
-    root = empty("track_root", (-0.55, 0.16, T), (0, 0, R(6)))
+    root = empty("track_root", (0.52, -0.33, T), (0, 0, R(-6)))   # 放在桌子右前方，光线好、离镜头近（显示器前面那块在阴影里）
     w, d, h = 0.27, 0.12, 0.022
     slab("track_base", w, d, h, 0.012, (0, 0, h / 2), M("track_base", "#16171b", 0.2), hot="cars").parent = root
     slab("track_top", w - 0.012, d - 0.012, 0.002, 0.008, (0, 0, h + 0.001), M("track_asphalt", "#3a3d45", 0.85), hot="cars").parent = root
