@@ -118,10 +118,11 @@ def adopt(mat, paint=None, metal=None, rough=None, sat=None, val=1.0):
     return mat
 
 
-def glb(name, path, length, loc, rot=(0, 0, 0), pre=(0, 0, 0), hot=None, parent=None, paint=None, sat=None, val=1.0):
+def glb(name, path, length, loc, rot=(0, 0, 0), pre=(0, 0, 0), hot=None, parent=None, paint=None, sat=None, val=1.0, keep=None):
     """导入一个 glb 模型：所有零件合成一个网格（墨线只描外轮廓，不会把小零件描成一团），
     去掉动画；先按 pre（欧拉角，弧度）转一下（比如把立着的面具放倒），再按水平最长边缩放到 length，底面贴 z=0。
-    paint = {材质名里的关键词: 颜色}，用来换车漆之类；sat / val 调整个模型贴图的饱和度和亮度。"""
+    paint = {材质名里的关键词: 颜色}，用来换车漆之类；sat / val 调整个模型贴图的饱和度和亮度。
+    keep(x, y, z) 返回 False 的零件整块去掉（按零件中心判断，坐标是导入后、转 pre 之前的），用来从一套模型里只留一件。"""
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, path))
     new = [o for o in bpy.data.objects if o not in before]
@@ -148,12 +149,32 @@ def glb(name, path, length, loc, rot=(0, 0, 0), pre=(0, 0, 0), hot=None, parent=
     me = ob.data
     # 有的模型自带卡通描边（反向外壳，材质叫 outline），会把整个物体包成黑块；描边交给风格化那一步
     drop = {i for i, m in enumerate(me.materials) if m and "outline" in m.name.lower()}
-    if drop:
-        bm = bmesh.new()
-        bm.from_mesh(me)
-        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index in drop], context="FACES")
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    dead = [f for f in bm.faces if f.material_index in drop]
+    if keep:
+        seen = set()
+        for f in bm.faces:   # 按连在一起的零件分组，零件中心不满足 keep 就整块删
+            if f.index in seen:
+                continue
+            part, todo = [], [f]
+            seen.add(f.index)
+            while todo:
+                g = todo.pop()
+                part.append(g)
+                for e in g.edges:
+                    for h in e.link_faces:
+                        if h.index not in seen:
+                            seen.add(h.index)
+                            todo.append(h)
+            vs = {v for g in part for v in g.verts}
+            c = sum((v.co for v in vs), Vector()) / len(vs)
+            if not keep(*c):
+                dead += part
+    if dead:
+        bmesh.ops.delete(bm, geom=list(set(dead)), context="FACES")
         bm.to_mesh(me)
-        bm.free()
+    bm.free()
     me.transform(Euler(pre).to_matrix().to_4x4())
     vs = [v.co for v in me.vertices]
     mn = Vector([min(v[i] for v in vs) for i in range(3)])

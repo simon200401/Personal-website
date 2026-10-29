@@ -37,7 +37,6 @@ export const HOTS = {
   music: { panel: 'music' },
   contact: { panel: 'contact' },
   camera: { panel: 'photos' },
-  fries: { panel: 'fries' },
   cars: { panel: 'cars' },
   calendar: { panel: 'review' },
   globe: { panel: 'places' },
@@ -66,7 +65,6 @@ export const LABELS = {
   music: { zh: '放张唱片', en: 'Play a record' },
   contact: { zh: '联系我', en: 'Contact' },
   camera: { zh: '摄影', en: 'Photography' },
-  fries: { zh: '一盘薯条', en: 'A plate of fries' },
   cars: { zh: '保时捷和赛车', en: 'Porsche & racing' },
   calendar: { zh: '年度回顾', en: 'Year in review' },
   globe: { zh: '去过的地方', en: 'Places' },
@@ -246,15 +244,6 @@ export const PANELS = {
     bullets: L([], []),
     tags: [],
     links: [{ label: L('邮箱 xuzihao1218@126.com', 'Email xuzihao1218@126.com'), href: 'mailto:xuzihao1218@126.com' }, { label: L('GitHub @simon200401', 'GitHub @simon200401'), href: 'https://github.com/simon200401' }],
-  },
-  fries: {
-    kicker: L('彩蛋', 'EASTER EGG'),
-    title: L('一盘薯条', 'A plate of fries'),
-    sub: L('工作也要吃饭', 'Even builders need snacks'),
-    body: L(['你发现了桌上的薯条。'], ['You found the fries.']),
-    bullets: L([], []),
-    tags: [],
-    links: [],
   },
 };
 

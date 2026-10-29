@@ -166,7 +166,6 @@ def build_monitor():
     lt = light("screen_light", "AREA", "screen", 6, "#ffb07a", (0, -0.06, 0), rot=(-math.pi / 2, 0, 0), size=0.6, size_y=0.36)
     lt.parent = tilt
     decal("sticky_a", 0.095, 0.08, (-0.87, 0.045), "now.png", yaw=-9, hot="now")   # NOW 便签：最近在做什么
-    decal("sticky_b", 0.085, 0.071, (-0.40, 0.07), "sticky_0.png", yaw=7, hot="keyboard")
 
 
 def build_track():
@@ -227,24 +226,13 @@ def build_center():
         rod(f"pen{i}", (x, py, T + 0.04), tip, 0.008, M(f"pen{i}", col, 0.4), seg=10)
     # 小布：美短（Zhuier 的猫模型，CC BY 4.0），贴图去掉棕色调成银虎斑；脸朝镜头偏右
     glb("cat", "models/cat.glb", 0.33, (0.34, 0.25, T), rot=(0, 0, R(16)), hot="cat", sat=0.12, val=1.25)
-    # 蜘蛛面具：点它切换宇宙（致敬参考站）
-    # 迈尔斯的面具（spider boy，CC BY 4.0）：仰面放倒，脸稍微朝镜头
+    # 迈尔斯的面具（spider boy，CC BY 4.0）：点它切换宇宙（致敬参考站）；仰面放倒，脸稍微朝镜头
     glb("mask", "models/mask.glb", 0.24, (0.10, 0.05, T), rot=(0, 0, R(-10)), pre=(R(-72), 0, 0), hot="mask")
-    decal("sticky_c", 0.085, 0.071, (0.26, 0.06), "sticky_2.png", yaw=-7, hot="mask")
-    # 薯条（彩蛋）
-    fx, fy = 0.27, -0.17
-    cyl("plate", 0.085, 0.012, (fx, fy, T + 0.006), M("plate", "#ffffff", 0.3), r2=0.115, hot="fries")
-    fry = bmesh.new()
-    for _ in range(30):
-        a, d = rng.uniform(0, math.tau), rng.uniform(0, 0.06)
-        m = Matrix.Translation((math.cos(a) * d, math.sin(a) * d, rng.uniform(0.012, 0.036))) @ Euler((rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5), rng.uniform(0, math.tau))).to_matrix().to_4x4() @ Matrix.Diagonal((0.012, 0.07, 0.012, 1))
-        bmesh.ops.create_cube(fry, size=1.0, matrix=m)
-    add("fries", fry, M("fries", "#ffc93c", 0.6), (fx, fy, T + 0.008), hot="fries")
     # 摊开的笔记本 + 笔
     decal("notebook", 0.44, 0.308, (-0.16, -0.33), "notebook.png", yaw=3, hot="notebook", thick=0.012, edge="#2f9e77")
     rod("nb_pen", (-0.02, -0.46, T + 0.022), (0.13, -0.36, T + 0.022), 0.006, M("nb_pen", "#e5484d", 0.4))
-    # Switch：底座 + 掌机（Bjarne Stokhof，CC BY 4.0），和 PS5 一起点开是游戏
-    glb("switch", "models/switch.glb", 0.25, (0.18, -0.41, T), rot=(0, 0, R(-10)), hot="games")
+    # Switch 掌机（Bjarne Stokhof，CC BY 4.0；原模型还带一台插在底座上的，只留掌机），和 PS5 一起点开是游戏
+    glb("switch", "models/switch.glb", 0.24, (0.28, -0.20, T), rot=(0, 0, R(-8)), hot="games", keep=lambda x, y, z: y < 0)
 
 
 def build_right():
@@ -310,8 +298,8 @@ def build_right():
     # 刊物三本，扇形摊开
     decal("zine_roundtable", 0.205, 0.28, (0.50, -0.05), "zine_roundtable.png", yaw=-13, hot="zine-2", thick=0.006)
     decal("zine_athena", 0.205, 0.28, (0.71, -0.17), "zine_athena.png", yaw=9, hot="zine-3", thick=0.006, z=0.008)
-    # iPhone 17 Pro（zhe_kan，CC BY-NC-SA 4.0）：正反两台平放在桌上，点开是 iOS App 项目
-    glb("phone", "models/iphone.glb", 0.15, (0.88, -0.39, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="phone")
+    # iPhone 17 Pro（zhe_kan，CC BY-NC-SA 4.0；原模型是正反两台，只留背面那台）：背面朝上平放，点开是 iOS App 项目
+    glb("phone", "models/iphone.glb", 0.15, (0.88, -0.39, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="phone", keep=lambda x, y, z: x < 0)
     # 相机
     cxm, cym, cyaw = 1.12, -0.16, R(-28)
     cam_b = M("cam_body", "#22242a", 0.5)
@@ -325,7 +313,6 @@ def build_right():
     decal("bizcard", 0.105, 0.06, (1.00, -0.31), "bizcard.png", yaw=-16, hot="contact", thick=0.001)
     decal("polaroid_a", 0.098, 0.118, (0.99, -0.44), "polaroid_a.png", yaw=12, hot="photos")
     decal("polaroid_b", 0.098, 0.118, (1.10, -0.43), "polaroid_b.png", yaw=-6, z=0.004, hot="photos")
-    decal("polaroid_c", 0.098, 0.118, (1.19, -0.35), "polaroid_c.png", yaw=-24, z=0.006, hot="photos")
 
 
 def build_plant():
