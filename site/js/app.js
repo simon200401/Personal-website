@@ -1,13 +1,13 @@
 // 入口：状态、交互、面板（静态 + 从旧站导入的内容）、对话、阅读模式。画面交给 stage.js，坐标换算在 geometry.js。
 import { groupAlbums } from './albums.js';
 import { streamChat } from './chat.js';
-import { ALBUMS, APPLE_MUSIC, CHAT, DYNAMIC, HOTS, INTRO_ORDER, LABELS, NOTEBOOK, PANELS, STYLES, UI, appleEmbed, matchTopic } from './content.js?v=20261029-1';
+import { ALBUMS, APPLE_MUSIC, CHAT, DYNAMIC, HOTS, INTRO_ORDER, LABELS, NOTEBOOK, PANELS, STYLES, UI, appleEmbed, matchTopic } from './content.js?v=20261030-1';
 import * as G from './geometry.js?v=20261011-1';
 import { renderGithub, tipLabel } from './github.js';
 import { renderJournal } from './journal.js?v=20261012-2';
 import { coverUrl, createPlayer, fmtTime } from './music.js';
 import { renderNews } from './news.js';
-import { createStage, hexToRgb, styleUrl } from './stage.js?v=20261029-1';
+import { createStage, hexToRgb, styleUrl } from './stage.js?v=20261030-1';
 import { createTour } from './tour.js';
 import { CENTER as WEB_CENTER, earthOf, hostOf, webLayout } from './web.js';
 
@@ -1003,12 +1003,12 @@ async function boot() {
   applyLang();
   buildHud();
   try {
-    scene = await (await fetch('assets/scene.json?v=20261029-1')).json();
+    scene = await (await fetch('assets/scene.json?v=20261030-1')).json();
     img = { w: scene.width, h: scene.height };
     hotByIndex = Object.entries(scene.hots).reduce((arr, [name, h]) => { const next = arr.slice(); next[h.index] = name; return next; }, []);
     stage = createStage(dom.canvas, img);
     progress(0.2);
-    const hotImg = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = 'assets/hot.png?v=20261029-1'; });
+    const hotImg = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = 'assets/hot.png?v=20261030-1'; });
     const cv = document.createElement('canvas');
     cv.width = hotImg.width;
     cv.height = hotImg.height;

@@ -382,7 +382,7 @@ def void(C):
     stip = blur(dilate(stip, 0.6 * C.s), 0.5 * C.s)                             # 暗部点画
     out = mix(out, hexc("#111114")[None, None], np.clip(stip * 1.4, 0, 1) * ~C.wall * 0.9)
     out = np.where(blot[..., None], hexc("#111114"), out)
-    acc = (luma(C.E) > 0.25) | C.mask("zine_echo", "echo_ring", "mug_band", "cam_ring", "shroom_cap")
+    acc = (luma(C.E) > 0.25) | C.mask("zine_echo", "echo_ring", "cam_ring", "shroom_cap")
     out = np.where(acc[..., None], hexc("#ff5a1f"), out)                        # 只留一个橙色
     dash = ((C.xx + C.yy) % (9 * C.s) < 4.5 * C.s)                              # 远处楼群画成虚线
     ln = C.lines(1.5, 0.8, 0.5, wobble=0.5, city=0.0)

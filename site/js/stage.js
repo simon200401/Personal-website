@@ -79,7 +79,7 @@ function loadImage(src) {
 }
 
 /** 一个风格的贴图地址；hi=true 是全尺寸。手机上的小地图也用它，跟舞台走同一份缓存。 */
-export const styleUrl = (id, hi = false, base = 'assets/') => `${base}styles/${id}${hi ? '' : '@1x'}.webp?v=20261029-1`;
+export const styleUrl = (id, hi = false, base = 'assets/') => `${base}styles/${id}${hi ? '' : '@1x'}.webp?v=20261030-1`;
 
 export function hexToRgb(hex) {
   const h = hex.replace('#', '');
