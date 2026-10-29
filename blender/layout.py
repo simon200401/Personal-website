@@ -3,7 +3,7 @@
 俯视机位、铺满物件、墙上软木板 + 剪报，右侧黑钢框落地窗外是楼群。
 每个可点的东西带 hot 名字，前端按它开面板：
   board / press / monitor / keyboard / mask（切换宇宙）/ zine-1 / zine-2 / zine-3（三个项目）
-  notebook（博客）/ phone / plant（兴趣）/ camera + photos（摄影）/ badge（工作）/ news（报纸）/ games（手柄）
+  notebook（博客）/ phone / plant（兴趣）/ camera + photos（摄影）/ badge（工作）/ news（报纸）/ games（PS5、Switch）
   music（唱片）/ contact（名片）/ fries / cars（显示器前的赛道和保时捷）/ calendar（年度回顾）/ globe（去过的地方）
   movies（电影票根）/ cards（卡片盒：认知积累）/ cat（美短）/ now（NOW 便签）
 """
@@ -16,7 +16,7 @@ import bmesh
 import bpy
 from mathutils import Euler, Matrix, Vector
 
-from kit import ROOT, SURFACES, M, T, add, ball, box, cyl, light, plane, slab, torus
+from kit import ROOT, SURFACES, M, T, add, ball, box, cyl, glb, light, plane, slab, torus
 
 WY = 0.58  # 后墙内表面
 rng = random.Random(7)
@@ -155,23 +155,6 @@ def build_desk():
             box(f"leg{x}{yy}", (0.05, 0.05, T - 0.045), (x, yy, (T - 0.045) / 2), steel)
 
 
-def keyboard(name, loc, yaw, case_col, caps, rows=5, cols=15, hot="keyboard"):
-    u = 0.0205
-    root = empty(name, loc, (R(3), 0, R(yaw)))
-    box(f"{name}_case", (cols * u + 0.016, rows * u + 0.016, 0.022), (0, 0, 0.011), M(f"{name}_case", case_col, 0.5), hot=hot, parent=root)
-    bms = {c: bmesh.new() for c in set(caps.values())}
-    for r in range(rows):
-        c = 0
-        while c < cols:
-            wide = 6 if (r == rows - 1 and c == 4) else 1
-            key = "space" if wide > 1 else ("accent" if (c in (0, cols - 1) or (r == 0 and c % 4 == 0) or rng.random() < 0.07) else "main")
-            m = Matrix.Translation(((c + wide / 2) * u - cols * u / 2, (rows / 2 - r - 0.5) * u, 0.028)) @ Matrix.Diagonal((u * wide - 0.003, u - 0.003, 0.012, 1))
-            bmesh.ops.create_cube(bms[caps[key]], size=1.0, matrix=m)
-            c += wide
-    for col, bm in bms.items():
-        add(f"{name}_caps_{col}", bm, M(f"cap_{col}", col, 0.45), hot=hot, parent=root)
-
-
 def build_monitor():
     dark, silver = M("mon_body", "#1d1f24", 0.4), M("silver", "#c9ccd2", 0.3, metal=0.6)
     root = empty("mon_root", (-0.58, 0.30, T), (0, 0, R(10)))
@@ -186,107 +169,8 @@ def build_monitor():
     decal("sticky_b", 0.085, 0.071, (-0.40, 0.07), "sticky_0.png", yaw=7, hot="keyboard")
 
 
-def _lerp(pts, x):
-    """分段线性插值：pts 是按 x 排好的 (x, y)。"""
-    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
-        if x <= x1:
-            t = 0.0 if x1 == x0 else max(0.0, (x - x0) / (x1 - x0))
-            return y0 + (y1 - y0) * t
-    return pts[-1][1]
-
-
-# 帕拉梅拉（第三代，2024– 款）的外形，单位是真车的米，车头在 x = 0，车尾在 x = 5.05。
-# 数据：车长 5.052、车宽 1.937（不含后视镜）、车高 1.423、轴距 2.950、21 寸轮毂（轮胎外径约 0.74）。
-PANAMERA = {
-    "length": 5.05, "wheelbase": 2.95, "front_axle": 0.98, "tyre_r": 0.37, "track": 0.84,
-    "bottom": ((0.0, 0.34), (0.25, 0.22), (0.6, 0.15), (4.6, 0.15), (4.9, 0.28), (5.05, 0.40)),
-    # 腰线 / 发动机盖 / 尾部的高度：车头低，往后升到挡风玻璃底，再平到车尾，尾部略翘（隐藏式尾翼）
-    "belt": ((0.0, 0.52), (0.08, 0.66), (0.35, 0.74), (1.0, 0.82), (1.55, 0.90), (3.0, 0.93), (4.5, 0.97), (4.95, 1.00), (5.05, 0.90)),
-    # 车顶：挡风玻璃从 1.55 升到 2.3，车顶最高 1.423 在 2.7 左右，然后一路溜背到 4.85
-    "roof": ((1.55, 0.90), (1.9, 1.17), (2.3, 1.38), (2.7, 1.423), (3.2, 1.40), (3.8, 1.29), (4.4, 1.12), (4.85, 1.00)),
-    "half_w": ((0.0, 0.62), (0.15, 0.86), (0.6, 0.94), (1.0, 0.965), (2.4, 0.94), (3.9, 0.968), (4.6, 0.95), (4.95, 0.86), (5.05, 0.78)),
-    "glass": {"windscreen": (1.58, 2.28), "side": (1.75, 4.30), "rear": (3.85, 4.80)},
-}
-
-
-def porsche(name, loc, yaw, paint, hot=None, length=0.105):
-    """按真车比例放样的帕拉梅拉：沿车长取一圈圈截面（下车身圆角 + 收窄的车窗），连成一个网格。
-    车窗、四点式日行灯、贯穿尾灯、尾部 PORSCHE 字样、21 寸五辐轮毂都按真车位置放。"""
-    P = PANAMERA
-    k = length / P["length"]
-    root = empty(name, loc, (0, 0, R(yaw)))
-    body, glass = M(name + "_paint", paint, 0.22, metal=0.55), M("car_glass", "#141a22", 0.08)
-    tyre, rim, hub = M("car_tyre", "#141416", 0.85), M("car_rim", "#a7abb2", 0.25, metal=0.85), M("car_hub", "#2a2c31", 0.4, metal=0.5)
-    drl, tail_m, black = M("car_drl", "#f2f6ff", 0.2, emit=3.0), M("car_tail", "#ff2a2a", 0.3, emit=2.5), M("car_trim", "#101114", 0.35)
-
-    def X(x):   # 真车坐标 → 桌上：车头朝 -X，车身中点在原点
-        return (x - P["length"] / 2) * k
-
-    def ring(x):
-        zb, zbelt, hw = _lerp(P["bottom"], x), _lerp(P["belt"], x), _lerp(P["half_w"], x)
-        has_top = P["roof"][0][0] < x < P["roof"][-1][0]
-        ztop = _lerp(P["roof"], x) if has_top else zbelt + 0.02
-        gw0 = hw * 0.90 if has_top else hw * 0.80        # 车窗底边（腰线上沿往里收）
-        gw1 = hw * 0.68 if has_top else hw * 0.55        # 车顶边
-        if not has_top and x < 1.6:   # 发动机盖中间比两侧翼子板低，前脸看得出两条鼓起的轮拱
-            ztop = zbelt - 0.05
-        half = [(0.0, zb), (hw * 0.90, zb), (hw, zb + 0.10), (hw, zbelt - 0.12), (hw * 0.985, zbelt - 0.02), (gw0, zbelt + 0.01),
-                (gw1, ztop - 0.03 if has_top else zbelt - 0.02), (gw1 * 0.7, ztop - 0.008), (0.0, ztop)]
-        return half
-
-    xs = [0.0, 0.03, 0.08, 0.15, 0.25, 0.4, 0.6, 0.8, 1.0, 1.25, 1.5, 1.58, 1.75, 1.9, 2.1, 2.28, 2.5, 2.7, 2.9, 3.2, 3.5, 3.85, 4.1, 4.3, 4.5, 4.65, 4.8, 4.86, 4.95, 5.0, 5.05]
-    bm = bmesh.new()
-    rings = []
-    for x in xs:
-        half = ring(x)
-        pts = half + [(-y, z) for y, z in reversed(half[1:-1])]
-        rings.append([bm.verts.new((X(x), y * k, z * k)) for y, z in pts])
-    n = len(rings[0])
-    g = P["glass"]
-    for a in range(len(xs) - 1):
-        xm = (xs[a] + xs[a + 1]) / 2
-        for j in range(n):
-            f = bm.faces.new((rings[a][j], rings[a + 1][j], rings[a + 1][(j + 1) % n], rings[a][(j + 1) % n]))
-            f.smooth = True
-            band = j if j < 8 else (n - 1 - j)   # 右半边的面对应回左半边同一条带
-            side = band == 5 and g["side"][0] < xm < g["side"][1] and not (2.95 < xm < 3.05)   # 侧窗，中间留 B 柱
-            top = band in (6, 7) and (g["windscreen"][0] < xm < g["windscreen"][1] or g["rear"][0] < xm < g["rear"][1])
-            f.material_index = 1 if (side or top) else 0
-    bm.faces.new(list(reversed(rings[0])))
-    bm.faces.new(rings[-1])
-    ob = add(name + "_body", bm, body, hot=hot, parent=root)
-    ob.data.materials.append(glass)
-
-    zw = P["tyre_r"] * k
-    for ax in (P["front_axle"], P["front_axle"] + P["wheelbase"]):
-        hw = _lerp(P["half_w"], ax)
-        for sy in (-1, 1):
-            y = sy * (hw - 0.10) * k
-            cyl(f"{name}_tyre{ax:.1f}{sy}", zw, 0.27 * k, (X(ax), y, zw), tyre, rot=(math.pi / 2, 0, 0), seg=28, hot=hot, parent=root)
-            yo = sy * (hw - 0.10 + 0.14) * k     # 轮毂外表面
-            cyl(f"{name}_rim{ax:.1f}{sy}", zw * 0.74, 0.01 * k, (X(ax), yo, zw), hub, rot=(math.pi / 2, 0, 0), seg=28, hot=hot, parent=root)
-            for sp in range(5):   # 五辐
-                a = sp * math.tau / 5
-                box(f"{name}_spoke{ax:.1f}{sy}{sp}", (0.11 * k, 0.012 * k, 0.26 * k), (X(ax) + math.sin(a) * 0.14 * k, yo + sy * 0.008 * k, zw + math.cos(a) * 0.14 * k), rim, rot=(0, a, 0), hot=hot, parent=root)
-            cyl(f"{name}_cap{ax:.1f}{sy}", zw * 0.16, 0.02 * k, (X(ax), yo + sy * 0.01 * k, zw), M("car_cap", "#c9a24a", 0.3, metal=0.8), rot=(math.pi / 2, 0, 0), seg=16, hot=hot, parent=root)
-    # 前大灯：深色灯罩里四个小方块（四点式日行灯）
-    for sy in (-1, 1):
-        hx, hy, hz = 0.30, sy * 0.70, 0.71   # 大灯趴在翼子板前端，往后上方斜
-        ball(f"{name}_headlamp{sy}", 1.0, (X(hx), hy * k, hz * k), black, scale=(0.24 * k, 0.17 * k, 0.07 * k), rot=(0, R(-14), sy * R(-12)), hot=hot, parent=root)
-        for q in range(4):
-            dy, dz = (q % 2 - 0.5) * 0.10, (q // 2 - 0.5) * 0.045
-            box(f"{name}_drl{sy}{q}", (0.08 * k, 0.06 * k, 0.025 * k), (X(hx - 0.06 - (q // 2) * 0.03), (hy + dy) * k, (hz + 0.035 + dz) * k), drl, rot=(0, R(-14), 0), hot=hot, parent=root)
-        box(f"{name}_mirror{sy}", (0.14 * k, 0.12 * k, 0.08 * k), (X(1.80), sy * 0.99 * k, 0.94 * k), body, hot=hot, parent=root)
-    # 进气口
-    box(f"{name}_intake", (0.04 * k, 1.1 * k, 0.16 * k), (X(0.02), 0, 0.42 * k), black, hot=hot, parent=root)
-    # 车尾：一整块贴图（贯穿尾灯 + PORSCHE 字样），朝 +X
-    tw = _lerp(P["half_w"], 5.05) * 2 * 0.92
-    plane(f"{name}_rear", tw * k, 0.24 * k, (X(5.05) + 0.0004, 0, 0.76 * k), tex("panamera_rear.png", rough=0.3), rot=(0, 0, math.pi / 2), hot=hot, parent=root)
-    return root
-
-
 def build_track():
-    """显示器前面的 1:24 车模：黑色亚克力展台，台面一条格子旗纹，正面铭牌；上面是 26 款帕拉梅拉，火山灰。"""
+    """桌子右前方的 1:24 车模：黑色亚克力展台，台面一条格子旗纹，正面铭牌；上面是一台银色 911。"""
     root = empty("track_root", (0.47, -0.36, T), (0, 0, R(-6)))   # 放在桌子右前方，光线好、离镜头近（显示器前面那块在阴影里）
     w, d, h = 0.27, 0.12, 0.022
     slab("track_base", w, d, h, 0.012, (0, 0, h / 2), M("track_base", "#16171b", 0.2), hot="cars").parent = root
@@ -294,17 +178,15 @@ def build_track():
     for k in range(24):   # 台面后沿一条格子旗纹
         box(f"grid{k}", (0.0105, 0.006, 0.0006), (-w / 2 + 0.012 + k * 0.0105, d / 2 - 0.014 + 0.006 * (k % 2), h + 0.0023), M("kerb_w", "#f4f1ea", 0.6), hot="cars", parent=root)
     plane("track_plaque", 0.11, 0.014, (0, -d / 2 - 0.0006, h / 2), tex("car_plaque.png", rough=0.4), hot="cars", parent=root)
-    porsche("car", (0, -0.004, h + 0.002), 180 - 8, "#6f6b64", hot="cars", length=0.21).parent = root   # 1:24，车长 21 cm
+    # 车模：992 GT3 Touring（Ddiaz Design，CC BY-NC-SA 4.0），车漆换成银色；1:24，车长 19 cm，顺着展台摆，车头朝左、稍微转向镜头
+    glb("car", "models/porsche_911.glb", 0.19, (0, -0.004, h + 0.002), rot=(0, 0, R(-78)), hot="cars", parent=root, paint={"Paint_Material": "#c9ccd1"})
 
 
 def build_left():
-    # 耳机
-    hp, pad = M("hp", "#2a2d35", 0.5), M("hp_pad", "#2b6be4", 0.7)
-    for i, (x, y) in enumerate(((-1.13, 0.33), (-0.95, 0.27))):
-        cyl(f"hp_cup{i}", 0.055, 0.04, (x, y, T + 0.02), hp)
-        torus(f"hp_pad{i}", 0.04, 0.014, (x, y, T + 0.044), pad, seg=28, sub=10)
-    torus("hp_band", 0.105, 0.009, (-1.04, 0.30, T + 0.012), hp, rot=(0, 0, R(-18 + 180)), arc=math.pi, seg=28, sub=8)
-    torus("hp_cable", 0.11, 0.004, (-1.06, 0.14, T + 0.004), M("cable", "#17181c"), rot=(0, 0, R(200)), arc=math.pi * 1.2, seg=28, sub=6)
+    # PS5 Slim + GTA VI + DualSense（Roberto Domínguez，CC BY 4.0）：立在桌子左后角，点开是游戏
+    glb("ps5", "models/ps5.glb", 0.33, (-1.14, 0.40, T), rot=(0, 0, R(18)), hot="games")
+    # AirPods Max（Mr.Philin，CC BY 4.0）：立在显示器左前方
+    glb("airpods", "models/airpods_max.glb", 0.17, (-0.96, 0.17, T), rot=(0, 0, R(24)))
     # 马克杯
     mx, my = -1.12, -0.02
     cyl("mug", 0.047, 0.095, (mx, my, T + 0.0475), M("mug", "#ffffff", 0.4))
@@ -318,10 +200,8 @@ def build_left():
     cyl("vinyl_disc", 0.085, 0.003, (vx, vy, T + 0.0085), M("vinyl_disc", "#16161a", 0.3), seg=64, hot="music")
     torus("vinyl_groove", 0.061, 0.0012, (vx, vy, T + 0.0098), M("vinyl_groove", "#34363f", 0.3), seg=64, sub=6, hot="music")
     cyl("vinyl_label", 0.034, 0.001, (vx, vy, T + 0.0105), M("vinyl_label", "#f5b301", 0.5), seg=40, hot="music")   # 不挖中心孔：墨线一描就把标签糊掉了
-    # 键盘 + 鼠标
-    keyboard("kb", (-0.64, -0.13, T + 0.002), 5, "#22242a", {"main": "#2f323b", "accent": "#ff7a3d", "space": "#f4f1ea"})
-    ball("mouse", 0.05, (-0.27, -0.15, T + 0.022), M("mouse", "#22242a", 0.4), scale=(0.72, 1.18, 0.5), hot="keyboard")
-    ball("mouse_wheel", 0.008, (-0.27, -0.115, T + 0.045), M("mouse_wheel", "#ff7a3d", 0.3, emit=2.0), scale=(0.5, 1.4, 0.6), hot="keyboard")
+        # 键盘（Diego Clemente 的 Vintage Keyboard，CC BY 4.0），不要鼠标
+    glb("kb", "models/keyboard.glb", 0.42, (-0.60, -0.09, T + 0.001), rot=(0, 0, R(5)), hot="keyboard")
     # 报纸（新闻）+ 项目一的刊物
     decal("newspaper", 0.25, 0.327, (-1.05, -0.34), "newspaper.png", yaw=11, hot="news", thick=0.007, edge="#e8e2d0")
     decal("zine_echo", 0.205, 0.28, (-0.70, -0.37), "zine_echo.png", yaw=-7, hot="zine-1", thick=0.006)
@@ -337,41 +217,6 @@ def build_left():
     torus("badge_strap", 0.055, 0.004, (bx - 0.025, by + 0.10, T + 0.005), M("strap", "#2b6be4", 0.6), hot="badge", seg=28, sub=6).scale = (0.8, 1.0, 1.0)
 
 
-def cat(cx, cy, yaw):
-    """小布：一只银色虎斑美短，「香箱座」揣着手趴在桌上睡觉。脸朝 -Y（朝镜头），圆脸大腮帮，
-    头压在身子前端，耳朵往两边微微撇开，尾巴沿右侧绕到前面。虎斑纹画在身子的贴图里（textures.py 的 tabby）。"""
-    fur, line, pink, white = M("cat_fur", "#c4c7cc", 0.8), M("cat_stripe", "#55585f", 0.8), M("cat_pink", "#eba3ad", 0.6), M("cat_white", "#eeece8", 0.8)
-    root = empty("cat_root", (cx, cy, T), (0, 0, yaw))
-    root.scale = (1.8, 1.8, 1.8)   # 约 28 cm 长，小奶猫的大小
-    bm = bmesh.new()   # 身子：长轴先沿 X 建（贴图的条纹按 X 画），再转到 Y；底部切平贴着桌面
-    bm.loops.layers.uv.verify()
-    bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0, calc_uvs=True)
-    bmesh.ops.scale(bm, vec=(0.074, 0.050, 0.044), verts=bm.verts)
-    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / 2, 3, "Z"))
-    bmesh.ops.translate(bm, verts=bm.verts, vec=(0, 0.012, 0.030))
-    bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, 0.001), plane_no=(0, 0, -1), clear_outer=True)
-    bmesh.ops.holes_fill(bm, edges=bm.edges)
-    for f in bm.faces:
-        f.smooth = True
-    add("cat_body", bm, tex("tabby.png", rough=0.8), hot="cat", parent=root)
-    # 头：圆脸、腮帮宽，压在身子前上方；整个头往上仰一点，从上往下看的镜头才看得到脸
-    head = empty("cat_head_root", (0, -0.052, 0.066), (R(-38), 0, 0), parent=root)
-    ball("cat_head", 0.038, (0, 0, 0), fur, scale=(1.18, 0.95, 0.92), hot="cat", parent=head)
-    for sx in (-1, 1):
-        ear = (sx * 0.025, 0.002, 0.031)
-        cyl(f"cat_ear{sx}", 0.016, 0.028, ear, fur, r2=0.002, rot=(R(-8), sx * R(24), 0), seg=16, hot="cat", parent=head)
-        cyl(f"cat_ear_in{sx}", 0.0105, 0.020, (ear[0] - sx * 0.001, ear[1] - 0.0045, ear[2] - 0.001), pink, r2=0.001, rot=(R(-8), sx * R(24), 0), seg=12, hot="cat", parent=head)
-        # 闭着的眼睛：两道向下弯的弧
-        torus(f"cat_eye{sx}", 0.0075, 0.0016, (sx * 0.017, -0.0355, 0.006), line, rot=(-math.pi / 2, 0, 0), arc=math.pi, seg=12, sub=5, hot="cat", parent=head)
-        # 白色的嘴套（两团）
-        ball(f"cat_muzzle{sx}", 0.011, (sx * 0.008, -0.0345, -0.008), white, scale=(1.0, 0.8, 0.85), hot="cat", parent=head)
-    ball("cat_nose", 0.0048, (0, -0.0385, -0.002), pink, scale=(1.2, 0.8, 0.8), hot="cat", parent=head)
-    for sx in (-1, 1):   # 揣在胸前、露出一点的前爪
-        ball(f"cat_paw{sx}", 0.010, (sx * 0.016, -0.052, 0.005), white, scale=(1.0, 1.2, 0.6), hot="cat", parent=root)
-    tail = torus("cat_tail", 0.056, 0.0085, (0, 0.012, 0.008), fur, rot=(0, 0, R(-70)), arc=R(150), seg=28, sub=10, hot="cat", parent=root)
-    tail.scale = (0.98, 1.38, 1.0)
-
-
 def build_center():
     # 笔架
     px, py = 0.00, 0.36
@@ -380,15 +225,11 @@ def build_center():
         x = px - 0.084 + i * 0.024
         tip = (x + rng.uniform(-0.012, 0.012), py + rng.uniform(0.0, 0.03), T + 0.17 + rng.uniform(-0.01, 0.02))
         rod(f"pen{i}", (x, py, T + 0.04), tip, 0.008, M(f"pen{i}", col, 0.4), seg=10)
-    # 美短：银色虎斑，团成一团睡在笔架旁边
-    cat(0.34, 0.27, R(-12))
+    # 小布：美短（Zhuier 的猫模型，CC BY 4.0），贴图去掉棕色调成银虎斑；脸朝镜头偏右
+    glb("cat", "models/cat.glb", 0.33, (0.34, 0.25, T), rot=(0, 0, R(16)), hot="cat", sat=0.12, val=1.25)
     # 蜘蛛面具：点它切换宇宙（致敬参考站）
-    mx, my = 0.10, 0.05
-    root = empty("mask_root", (mx, my, T + 0.002), (R(-14), 0, R(-10)))
-    ball("mask", 1.0, (0, 0, 0), M("mask_red", "#d81f2a", 0.45), scale=(0.088, 0.112, 0.062), half=True, hot="mask", parent=root)
-    for sd in (-1, 1):
-        ball(f"mask_eye_rim{sd}", 1.0, (sd * 0.035, -0.016, 0.045), M("mask_rim", "#101014", 0.4), scale=(0.031, 0.046, 0.008), rot=(R(-12), R(sd * 24), R(sd * 24)), hot="mask", parent=root)
-        ball(f"mask_eye{sd}", 1.0, (sd * 0.035, -0.018, 0.0535), M("mask_eye", "#ffffff", 0.3), scale=(0.022, 0.035, 0.006), rot=(R(-12), R(sd * 24), R(sd * 24)), hot="mask", parent=root)
+    # 迈尔斯的面具（spider boy，CC BY 4.0）：仰面放倒，脸稍微朝镜头
+    glb("mask", "models/mask.glb", 0.24, (0.10, 0.05, T), rot=(0, 0, R(-10)), pre=(R(-72), 0, 0), hot="mask")
     decal("sticky_c", 0.085, 0.071, (0.26, 0.06), "sticky_2.png", yaw=-7, hot="mask")
     # 薯条（彩蛋）
     fx, fy = 0.27, -0.17
@@ -402,15 +243,8 @@ def build_center():
     # 摊开的笔记本 + 笔
     decal("notebook", 0.44, 0.308, (-0.16, -0.33), "notebook.png", yaw=3, hot="notebook", thick=0.012, edge="#2f9e77")
     rod("nb_pen", (-0.02, -0.46, T + 0.022), (0.13, -0.36, T + 0.022), 0.006, M("nb_pen", "#e5484d", 0.4))
-    # 手柄
-    gx, gy, gm = 0.20, -0.38, M("pad", "#f4f1ea", 0.5)
-    box("pad_body", (0.11, 0.055, 0.03), (gx, gy, T + 0.018), gm, rot=(0, 0, R(-12)), hot="games")
-    for s in (-1, 1):
-        ball(f"pad_grip{s}", 0.04, (gx + s * 0.058, gy - 0.012 - s * 0.012, T + 0.02), gm, scale=(0.9, 1.25, 0.6), rot=(0, 0, R(-12)), hot="games")
-        cyl(f"pad_stick{s}", 0.011, 0.012, (gx + s * 0.028, gy - 0.004 - s * 0.006, T + 0.038), M("pad_stick", "#22242a"), seg=14, hot="games")
-    for i, col in enumerate(("#e5484d", "#2b6be4", "#f5b301", "#30a46c")):
-        a = i * math.pi / 2
-        cyl(f"pad_btn{i}", 0.006, 0.006, (gx + 0.045 + math.cos(a) * 0.012, gy + 0.004 + math.sin(a) * 0.012, T + 0.035), M(f"pad_btn{i}", col, 0.3), seg=10, hot="games")
+    # Switch：底座 + 掌机（Bjarne Stokhof，CC BY 4.0），和 PS5 一起点开是游戏
+    glb("switch", "models/switch.glb", 0.25, (0.18, -0.41, T), rot=(0, 0, R(-10)), hot="games")
 
 
 def build_right():
@@ -476,9 +310,8 @@ def build_right():
     # 刊物三本，扇形摊开
     decal("zine_roundtable", 0.205, 0.28, (0.50, -0.05), "zine_roundtable.png", yaw=-13, hot="zine-2", thick=0.006)
     decal("zine_athena", 0.205, 0.28, (0.71, -0.17), "zine_athena.png", yaw=9, hot="zine-3", thick=0.006, z=0.008)
-    # 手机：协作看板，点击打开项目一
-    box("phone_body", (0.082, 0.172, 0.009), (0.86, -0.39, T + 0.0045), M("phone", "#111216", 0.3), rot=(0, 0, R(-18)), hot="phone")
-    plane("phone_screen", 0.074, 0.159, (0.86, -0.39, T + 0.0096), tex("phone.png", emit=0.8, rough=0.2), rot=(-math.pi / 2, 0, R(-18)), hot="phone", surface="phone")
+    # iPhone 17 Pro（zhe_kan，CC BY-NC-SA 4.0）：正反两台平放在桌上，点开是 iOS App 项目
+    glb("phone", "models/iphone.glb", 0.15, (0.88, -0.39, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="phone")
     # 相机
     cxm, cym, cyaw = 1.12, -0.16, R(-28)
     cam_b = M("cam_body", "#22242a", 0.5)

@@ -73,6 +73,106 @@ def set_mode(mode):
         nt.links.new(m[mode].outputs[0], m["out"].inputs["Surface"])
 
 
+def adopt(mat, paint=None, metal=None, rough=None, sat=None, val=1.0):
+    """把外部导入的材质（glTF 的 Principled）接进 MATS：原样留作 beauty，再补 albedo / emit 两个出口。
+    paint 给了就把底色换成这个颜色（车漆）；sat / val 给贴图调饱和度和亮度（棕虎斑 → 银虎斑）。"""
+    if mat.name in MATS:
+        return mat
+    nt = mat.node_tree
+    out = next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL")
+    p = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    beauty = out.inputs["Surface"].links[0].from_node if out.inputs["Surface"].links else p
+    alb, emi = nt.nodes.new("ShaderNodeEmission"), nt.nodes.new("ShaderNodeEmission")
+    emi.inputs["Color"].default_value = (0, 0, 0, 1)
+    if p:
+        bc = p.inputs["Base Color"]
+        if paint:
+            for l in list(bc.links):
+                nt.links.remove(l)
+            bc.default_value = rgb(paint)
+        if metal is not None:
+            p.inputs["Metallic"].default_value = metal
+        if rough is not None:
+            p.inputs["Roughness"].default_value = rough
+        if bc.links and sat is not None:
+            hs = nt.nodes.new("ShaderNodeHueSaturation")
+            hs.inputs["Saturation"].default_value, hs.inputs["Value"].default_value = sat, val
+            nt.links.new(bc.links[0].from_socket, hs.inputs["Color"])
+            nt.links.new(hs.outputs["Color"], bc)
+        if bc.links:
+            nt.links.new(bc.links[0].from_socket, alb.inputs["Color"])
+        else:
+            alb.inputs["Color"].default_value = bc.default_value
+        mat.diffuse_color = bc.default_value
+        if p.inputs["Emission Strength"].default_value > 0:
+            ec = p.inputs["Emission Color"]
+            if ec.links:
+                nt.links.new(ec.links[0].from_socket, emi.inputs["Color"])
+            else:
+                emi.inputs["Color"].default_value = ec.default_value
+    else:   # 无光照材质（KHR_materials_unlit）：albedo 直接接贴图
+        im = next((n for n in nt.nodes if n.type == "TEX_IMAGE"), None)
+        if im:
+            nt.links.new(im.outputs["Color"], alb.inputs["Color"])
+    MATS[mat.name] = {"mat": mat, "out": out, "beauty": beauty, "albedo": alb, "emit": emi}
+    return mat
+
+
+def glb(name, path, length, loc, rot=(0, 0, 0), pre=(0, 0, 0), hot=None, parent=None, paint=None, sat=None, val=1.0):
+    """导入一个 glb 模型：所有零件合成一个网格（墨线只描外轮廓，不会把小零件描成一团），
+    去掉动画；先按 pre（欧拉角，弧度）转一下（比如把立着的面具放倒），再按水平最长边缩放到 length，底面贴 z=0。
+    paint = {材质名里的关键词: 颜色}，用来换车漆之类；sat / val 调整个模型贴图的饱和度和亮度。"""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, path))
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH"]
+    for o in new:
+        o.animation_data_clear()
+        if o.type == "MESH" and o.data.shape_keys:
+            o.shape_key_clear()
+    for o in meshes:
+        mw = o.matrix_world.copy()
+        o.data = o.data.copy()
+        o.data.transform(mw)
+        o.parent = None
+        o.matrix_world = Matrix.Identity(4)
+        o.modifiers.clear()
+    for o in new:
+        if o.type != "MESH":
+            bpy.data.objects.remove(o)
+    ob = meshes[0]
+    if len(meshes) > 1:
+        with bpy.context.temp_override(active_object=ob, selected_editable_objects=meshes, selected_objects=meshes):
+            bpy.ops.object.join()
+    ob.name = ob.data.name = name
+    me = ob.data
+    # 有的模型自带卡通描边（反向外壳，材质叫 outline），会把整个物体包成黑块；描边交给风格化那一步
+    drop = {i for i, m in enumerate(me.materials) if m and "outline" in m.name.lower()}
+    if drop:
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index in drop], context="FACES")
+        bm.to_mesh(me)
+        bm.free()
+    me.transform(Euler(pre).to_matrix().to_4x4())
+    vs = [v.co for v in me.vertices]
+    mn = Vector([min(v[i] for v in vs) for i in range(3)])
+    mx = Vector([max(v[i] for v in vs) for i in range(3)])
+    k = length / max(mx.x - mn.x, mx.y - mn.y)
+    me.transform(Matrix.Scale(k, 4) @ Matrix.Translation((-(mn.x + mx.x) / 2, -(mn.y + mx.y) / 2, -mn.z)))
+    for slot in ob.material_slots:
+        if slot.material:
+            col = next((c for key, c in (paint or {}).items() if key in slot.material.name), None)
+            adopt(slot.material, paint=col, metal=0.7 if col else None, rough=0.28 if col else None, sat=sat, val=val)
+    ob.rotation_mode = "XYZ"   # glTF 导进来是四元数，不改的话下面的 rotation_euler 不生效
+    ob.location, ob.rotation_euler = loc, Euler(rot)
+    if hot:
+        ob["hot"] = hot
+    if parent:
+        ob.parent = parent
+    return ob
+
+
 def add(name, bm, mat=None, loc=(0, 0, 0), rot=(0, 0, 0), hot=None, parent=None):
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)

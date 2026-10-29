@@ -427,19 +427,6 @@ def cards_label(w=720, h=240):
     return im
 
 
-def panamera_rear(w=1600, h=270, paint=(111, 107, 100)):
-    """帕拉梅拉车尾：上面一条贯穿尾灯，下面是 PORSCHE 字样，底色是车漆（火山灰）。"""
-    im = Image.new("RGB", (w, h), paint)
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle((20, 30, w - 20, 74), radius=20, fill=(60, 8, 10))
-    d.rounded_rectangle((34, 40, w - 34, 64), radius=12, fill=(255, 52, 52))
-    for sx in (60, w - 260):   # 两端的灯组更亮更宽
-        d.rounded_rectangle((sx, 28, sx + 200, 78), radius=18, fill=(255, 70, 70))
-    d.text((w / 2, 168), "P O R S C H E", font=font("din", 76), fill=(30, 30, 34), anchor="mm")
-    d.text((w - 140, 236), "PANAMERA", font=font("din", 30), fill=(34, 34, 38), anchor="mm")
-    return im
-
-
 def earth(w=2048, h=1024):
     """地球仪的贴图：等距圆柱投影，真实的海陆分布（global-land-mask 自带的 1 km 陆地掩膜），漫画配色；两极是冰。"""
     from global_land_mask import globe
@@ -460,31 +447,12 @@ def earth(w=2048, h=1024):
     return pic
 
 
-def tabby(w=1024, h=512):
-    """美短银色虎斑的身体贴图（UV 球：横向是绕竖轴一圈，纵向从下到上）。
-    背上是跨过脊背的一道道深色条纹，两侧腹各一个经典虎斑的“靶心”纹。"""
-    th = np.linspace(-np.pi, np.pi, w, endpoint=False)[None, :]
-    ph = np.linspace(np.pi / 2, -np.pi / 2, h)[:, None]
-    x, y, z = np.cos(ph) * np.cos(th), np.cos(ph) * np.sin(th), np.sin(ph)
-    im = np.empty((h, w, 3), np.float32)
-    im[:] = (196, 199, 204)
-    dark = np.zeros((h, w), bool)
-    for c in (-0.5, -0.22, 0.06, 0.34, 0.62):   # 跨过脊背的条纹：x 等于常数的等值线，只画背上那一段
-        dark |= (np.abs(x - c) < 0.035) & (z > 0.45)
-    for sy in (-1, 1):   # 侧腹靶心纹：以侧面一点为中心的一个圆环 + 中心圆点
-        cx, cy, cz = 0.1, sy * 0.88, 0.45
-        dist = np.arccos(np.clip((x * cx + y * cy + z * cz) / math.sqrt(cx * cx + cy * cy + cz * cz), -1, 1))
-        dark |= (np.abs(dist - 0.38) < 0.06) | (dist < 0.14)
-    im[dark] = (112, 116, 124)
-    return Image.fromarray(im.astype(np.uint8))
-
-
 def car_plaque(w=880, h=112):
     """车模展台正面的铭牌。"""
     im = Image.new("RGB", (w, h), (200, 202, 206))
     d = ImageDraw.Draw(im)
     d.rectangle((6, 6, w - 7, h - 7), outline=(40, 40, 44), width=3)
-    d.text((w / 2, h / 2 + 2), "PORSCHE PANAMERA · 2026 · VOLCANO GREY", font=fit(d, "PORSCHE PANAMERA · 2026 · VOLCANO GREY", "din", w - 60, 56), fill=(24, 24, 28), anchor="mm")
+    d.text((w / 2, h / 2 + 2), "PORSCHE 911 GT3 TOURING · GT SILVER · 1:24", font=fit(d, "PORSCHE 911 GT3 TOURING · GT SILVER · 1:24", "din", w - 60, 56), fill=(24, 24, 28), anchor="mm")
     return im
 
 
@@ -641,28 +609,6 @@ def screen(w=1600, h=1000):
     return im
 
 
-def phone(w=470, h=1010):
-    """通用协作看板。"""
-    im = Image.new("RGB", (w, h), (18, 18, 22))
-    d = ImageDraw.Draw(im)
-    d.text((34, 56), "协作", font=font("cjk", 56), fill=PAPER)
-    d.ellipse((36, 150, 56, 170), fill=GREEN)
-    d.text((70, 143), "团队项目 · 进行中", font=font("cjk", 28), fill=(190, 192, 200))
-    d.text((34, 204), "进展", font=font("cjk", 30), fill=(150, 152, 160))
-    for i, (a, b, col) in enumerate((("协作", "整理中…", PAPER), ("设计", "进行中", ORANGE), ("开发", "待同步", YELLOW))):
-        y = 256 + i * 142
-        d.rounded_rectangle((26, y, w - 26, y + 122), radius=22, fill=(34, 34, 40))
-        d.ellipse((48, y + 35, 100, y + 87), fill=col)
-        d.text((122, y + 22), a, font=font("cjk", 36), fill=PAPER)
-        d.text((122, y + 70), b, font=font("cjk", 28), fill=(180, 182, 190))
-    d.rounded_rectangle((26, 700, w - 26, 772), radius=22, outline=(120, 122, 130), width=3)
-    d.text((w / 2, 736), "新任务", font=font("cjk", 32), fill=PAPER, anchor="mm")
-    d.ellipse((w / 2 - 76, h - 216, w / 2 + 76, h - 64), fill=RED)
-    d.text((w / 2, h - 140), "S", font=font("impact", 110), fill=PAPER, anchor="mm")
-    d.text((w / 2, h - 34), "一起完成", font=font("cjk", 26), fill=(170, 172, 180), anchor="mm")
-    return im
-
-
 def small_papers(out):
     for i, (txt, col) in enumerate((("CLICK THE\nKEYBOARD.\nTALK TO ME.", YELLOW), ("PICK A ZINE.\nPRESS PLAY.", YELLOW), ("TAP THE MASK\n>> NEW\nUNIVERSE", PINK))):
         s = card(360, 300, col, seed=40 + i)
@@ -786,13 +732,10 @@ def main(out):
     zine("iOS APP", 3, "ON MY IPHONE.", (142, 78, 198), INK, "phone").save(out / "zine_athena.png")
     notebook().save(out / "notebook.png")
     screen().save(out / "screen.png")
-    phone().save(out / "phone.png")
     small_papers(out)
     now_note().save(out / "now.png")
     earth().save(out / "earth.png")
-    tabby().save(out / "tabby.png")
     car_plaque().save(out / "car_plaque.png")
-    panamera_rear().save(out / "panamera_rear.png")
     calendar().save(out / "calendar.png")
     cards_label().save(out / "cards_label.png")
     # 三张电影票根：最喜欢的三部

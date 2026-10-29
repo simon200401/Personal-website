@@ -51,6 +51,7 @@ python -c "import runpy, sys; sys.argv = ['blender', '--', '--out', 'build/passe
 
 ## 说明
 
+- 车模、小猫、面具、键盘、PS5、Switch、耳机、手机是 Sketchfab 上的模型，作者和许可见 [`blender/models/CREDITS.md`](blender/models/CREDITS.md)。911 和 iPhone 是 CC BY-NC-SA 4.0，所以渲染出来的桌面图也按这个许可共享，不能商用。
 - 蜘蛛面具、蛛网、EARTH 编号来自原项目对《蜘蛛侠：平行宇宙》的致敬，图形是原作者自己画的。
 - 网页字体（Bangers、Comic Neue）自托管在 `site/fonts/`，国内访问不依赖 Google Fonts。
 - 新闻来自公开 RSS（Google AI、arXiv、BBC），每次部署时更新。

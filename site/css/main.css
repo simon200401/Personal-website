@@ -425,3 +425,7 @@ html[data-style="neon"] .dyn-github { --gh0: #161b22; --gh1: #0e4429; --gh2: #00
 
 /* 唱片机里嵌的 Apple Music 歌单 */
 .apple-music { display: block; width: 100%; height: 450px; border: 0; border-radius: 10px; margin-bottom: 12px; background: transparent; }
+
+/* ── 模型致谢：底部一行小字 ── */
+.credits { width: 100%; order: 9; margin: 2px 0 0; font-size: 10px; opacity: .6; color: #fff; text-shadow: 1px 1px 0 #14121c; pointer-events: auto; }
+.credits a { color: inherit; }
