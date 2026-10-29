@@ -343,7 +343,7 @@ def cat(cx, cy, yaw):
     头压在身子前端，耳朵往两边微微撇开，尾巴沿右侧绕到前面。虎斑纹画在身子的贴图里（textures.py 的 tabby）。"""
     fur, line, pink, white = M("cat_fur", "#c4c7cc", 0.8), M("cat_stripe", "#55585f", 0.8), M("cat_pink", "#eba3ad", 0.6), M("cat_white", "#eeece8", 0.8)
     root = empty("cat_root", (cx, cy, T), (0, 0, yaw))
-    root.scale = (1.3, 1.3, 1.3)
+    root.scale = (1.8, 1.8, 1.8)   # 约 28 cm 长，小奶猫的大小
     bm = bmesh.new()   # 身子：长轴先沿 X 建（贴图的条纹按 X 画），再转到 Y；底部切平贴着桌面
     bm.loops.layers.uv.verify()
     bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=1.0, calc_uvs=True)
@@ -381,7 +381,7 @@ def build_center():
         tip = (x + rng.uniform(-0.012, 0.012), py + rng.uniform(0.0, 0.03), T + 0.17 + rng.uniform(-0.01, 0.02))
         rod(f"pen{i}", (x, py, T + 0.04), tip, 0.008, M(f"pen{i}", col, 0.4), seg=10)
     # 美短：银色虎斑，团成一团睡在笔架旁边
-    cat(0.33, 0.25, R(-12))
+    cat(0.34, 0.27, R(-12))
     # 蜘蛛面具：点它切换宇宙（致敬参考站）
     mx, my = 0.10, 0.05
     root = empty("mask_root", (mx, my, T + 0.002), (R(-14), 0, R(-10)))
