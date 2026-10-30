@@ -54,13 +54,13 @@ test('联系面板：至少有一个联系方式', () => {
   assert.ok(PANELS.contact.links.some((l) => l.href), '联系面板里没有链接');
 });
 
-test('新物件：赛道、台历、地球仪、票根、卡片盒、小猫、NOW 便签都有面板，阅读模式里有它们', () => {
-  const want = { cars: 'cars', calendar: 'review', globe: 'places', movies: 'movies', cards: 'knowledge', cat: 'cat', now: 'now', games: 'games' };
+test('新物件：赛道、台历、地球仪、票根、卡片盒、小猫都有面板，阅读模式里有它们', () => {
+  const want = { cars: 'cars', calendar: 'review', globe: 'places', movies: 'movies', cards: 'knowledge', cat: 'cat', games: 'games' };
   Object.entries(want).forEach(([hot, panel]) => {
     assert.equal(HOTS[hot].panel, panel);
     assert.ok(INTRO_ORDER.includes(panel), panel);
   });
-  ['trophy', 'github', 'friends', 'table-model'].forEach((h) => assert.ok(!HOTS[h], `${h} 应该已经去掉`));
+  ['trophy', 'github', 'friends', 'table-model', 'badge', 'now', 'phone'].forEach((h) => assert.ok(!HOTS[h], `${h} 应该已经去掉`));
 });
 
 test('桌上每个热点都有名字，指向的面板存在', () => {
