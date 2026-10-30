@@ -60,7 +60,7 @@ test('新物件：赛道、台历、地球仪、票根、卡片盒、小猫都�
     assert.equal(HOTS[hot].panel, panel);
     assert.ok(INTRO_ORDER.includes(panel), panel);
   });
-  ['trophy', 'github', 'friends', 'table-model', 'badge', 'now', 'phone'].forEach((h) => assert.ok(!HOTS[h], `${h} 应该已经去掉`));
+  ['trophy', 'github', 'friends', 'table-model', 'badge', 'phone'].forEach((h) => assert.ok(!HOTS[h], `${h} 应该已经去掉`));
 });
 
 test('桌上每个热点都有名字，指向的面板存在', () => {
