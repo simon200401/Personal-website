@@ -169,7 +169,7 @@ def build_monitor():
 
 def build_track():
     """桌子右前方的 1:24 车模：黑色亚克力展台，台面一条格子旗纹，正面铭牌；上面是一台银色 911。"""
-    root = empty("track_root", (0.47, -0.36, T), (0, 0, R(-6)))   # 放在桌子右前方，光线好、离镜头近（显示器前面那块在阴影里）
+    root = empty("track_root", (0.02, -0.11, T), (0, 0, R(-4)))   # 桌子正中，面具和小猫前面
     w, d, h = 0.27, 0.12, 0.022
     slab("track_base", w, d, h, 0.012, (0, 0, h / 2), M("track_base", "#16171b", 0.2), hot="cars").parent = root
     slab("track_top", w - 0.012, d - 0.012, 0.002, 0.008, (0, 0, h + 0.001), M("track_asphalt", "#3a3d45", 0.85), hot="cars").parent = root
@@ -184,28 +184,28 @@ def build_left():
     # PS5 Slim + GTA VI + DualSense（Roberto Domínguez，CC BY 4.0）：立在桌子左后角，点开是游戏
     glb("ps5", "models/ps5.glb", 0.33, (-1.14, 0.40, T), rot=(0, 0, R(18)), hot="games")
     # AirPods Max（Mr.Philin，CC BY 4.0）：立在键盘左边，点开是 Apple Music 歌单
-    glb("airpods", "models/airpods_max.glb", 0.17, (-0.95, -0.04, T), rot=(0, 0, R(24)), hot="music")
+    glb("airpods", "models/airpods_max.glb", 0.17, (-1.02, -0.04, T), rot=(0, 0, R(24)), hot="music")
     # 键盘（Diego Clemente 的 Vintage Keyboard，CC BY 4.0），不要鼠标
-    glb("kb", "models/keyboard.glb", 0.42, (-0.60, -0.09, T + 0.001), rot=(0, 0, R(5)), hot="keyboard")
+    glb("kb", "models/keyboard.glb", 0.42, (-0.58, 0.0, T + 0.001), rot=(0, 0, R(8)), hot="keyboard")
     # 报纸（新闻）+ 项目一的刊物
-    decal("newspaper", 0.25, 0.327, (-1.05, -0.34), "newspaper.png", yaw=11, hot="news", thick=0.007, edge="#e8e2d0")
-    decal("zine_echo", 0.205, 0.28, (-0.70, -0.37), "zine_echo.png", yaw=-7, hot="zine-1", thick=0.006)
+    decal("newspaper", 0.25, 0.327, (-1.04, -0.30), "newspaper.png", yaw=9, hot="news", thick=0.007, edge="#e8e2d0")
+    decal("zine_echo", 0.205, 0.28, (0.36, -0.22), "zine_echo.png", yaw=-9, hot="zine-1", thick=0.006)
     # 两张电影票根（喜欢的电影和剧）
-    decal("ticket_a", 0.13, 0.055, (-0.50, -0.42), "ticket_0.png", yaw=9, hot="movies", thick=0.0006, edge="#f2e6c8")
-    decal("ticket_b", 0.13, 0.055, (-0.47, -0.36), "ticket_1.png", yaw=-14, z=0.0012, hot="movies", thick=0.0006, edge="#f2e6c8")
-    decal("ticket_c", 0.13, 0.055, (-0.52, -0.31), "ticket_2.png", yaw=4, z=0.0024, hot="movies", thick=0.0006, edge="#f2e6c8")
+    decal("ticket_a", 0.13, 0.055, (-0.80, -0.42), "ticket_0.png", yaw=9, hot="movies", thick=0.0006, edge="#f2e6c8")
+    decal("ticket_b", 0.13, 0.055, (-0.77, -0.36), "ticket_1.png", yaw=-14, z=0.0012, hot="movies", thick=0.0006, edge="#f2e6c8")
+    decal("ticket_c", 0.13, 0.055, (-0.82, -0.31), "ticket_2.png", yaw=4, z=0.0024, hot="movies", thick=0.0006, edge="#f2e6c8")
 
 
 def build_center():
     # 小布：美短（Zhuier 的猫模型，CC BY 4.0），贴图去掉棕色调成银虎斑；脸朝镜头偏右
     glb("cat", "models/cat.glb", 0.33, (0.34, 0.25, T), rot=(0, 0, R(16)), hot="cat", sat=0.12, val=1.25)
     # 迈尔斯的面具（spider boy，CC BY 4.0）：点它切换宇宙（致敬参考站）；仰面放倒，脸稍微朝镜头
-    glb("mask", "models/mask.glb", 0.24, (0.10, 0.05, T), rot=(0, 0, R(-10)), pre=(R(-72), 0, 0), hot="mask")
+    glb("mask", "models/mask.glb", 0.24, (0.06, 0.14, T), rot=(0, 0, R(-6)), pre=(R(-72), 0, 0), hot="mask")
     # 摊开的笔记本 + 笔
-    decal("notebook", 0.44, 0.308, (-0.16, -0.33), "notebook.png", yaw=3, hot="notebook", thick=0.012, edge="#2f9e77")
-    rod("nb_pen", (-0.02, -0.46, T + 0.022), (0.13, -0.36, T + 0.022), 0.006, M("nb_pen", "#e5484d", 0.4))
+    decal("notebook", 0.44, 0.308, (-0.48, -0.36), "notebook.png", yaw=4, hot="notebook", thick=0.012, edge="#2f9e77")
+    rod("nb_pen", (-0.36, -0.48, T + 0.022), (-0.22, -0.40, T + 0.022), 0.006, M("nb_pen", "#e5484d", 0.4))
     # Switch 掌机（Bjarne Stokhof，CC BY 4.0；原模型还带一台插在底座上的，只留掌机），和 PS5 一起点开是游戏
-    glb("switch", "models/switch.glb", 0.24, (0.28, -0.20, T), rot=(0, 0, R(-8)), hot="games", keep=lambda x, y, z: y < 0)
+    glb("switch", "models/switch.glb", 0.24, (0.0, -0.37, T), rot=(0, 0, R(-6)), hot="games", keep=lambda x, y, z: y < 0)
 
 
 def build_right():
@@ -269,10 +269,10 @@ def build_right():
         if k % 3 == 0:
             box(f"card_tab{k}", (0.002, 0.018, 0.012), (x, -0.02 + (k % 2) * 0.03, h + 0.008), tabs[(k // 3) % 4], rot=(0, R(-6 + (k % 3) * 2), 0), hot="cards", parent=kroot)
     # 刊物三本，扇形摊开
-    decal("zine_roundtable", 0.205, 0.28, (0.50, -0.05), "zine_roundtable.png", yaw=-13, hot="zine-2", thick=0.006)
-    decal("zine_athena", 0.205, 0.28, (0.71, -0.17), "zine_athena.png", yaw=9, hot="zine-3", thick=0.006, z=0.008)
+    decal("zine_roundtable", 0.205, 0.28, (0.57, -0.15), "zine_roundtable.png", yaw=3, hot="zine-2", thick=0.006)
+    decal("zine_athena", 0.205, 0.28, (0.78, -0.22), "zine_athena.png", yaw=12, hot="zine-3", thick=0.006, z=0.008)
     # iPhone 17 Pro（zhe_kan，CC BY-NC-SA 4.0；原模型是正反两台，只留背面那台）：背面朝上平放，点开是联系方式
-    glb("phone", "models/iphone.glb", 0.15, (0.88, -0.39, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="contact", keep=lambda x, y, z: x < 0)
+    glb("phone", "models/iphone.glb", 0.15, (0.90, -0.40, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="contact", keep=lambda x, y, z: x < 0)
     # 相机
     cxm, cym, cyaw = 1.12, -0.16, R(-28)
     cam_b = M("cam_body", "#22242a", 0.5)
