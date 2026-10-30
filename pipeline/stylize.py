@@ -408,13 +408,47 @@ def skyline_track(C, hot):
     return np.where(bars, 1 + np.rint(t * 253), hot).astype(np.uint8), np.where(bars, 255, hot).astype(np.uint8)
 
 
+# 软木板贴图（2400×1176）上单独可点的几张纸：热点名 → [(中心 x, y, 宽, 高, 角度)]，和 textures.py 里 stick() 的参数一致
+BOARD_TEX = (2400, 1176)
+BOARD_SPOTS = {
+    "now": [(250, 640, 330, 250, 4)],                              # 黄色 NOW 便签
+    "work": [(410, 930, 320, 230, -3), (2240, 330, 230, 320, -4)],  # 实习年表便签、腾讯卡片
+}
+
+
+def board_spots(C, board):
+    """把 BOARD_SPOTS 的纸片按软木板四角投到画面上，只留在软木板像素里。"""
+    corners = C.meta["surfaces"].get("board")
+    if corners is None:
+        return {}
+    tw, th = BOARD_TEX
+    H = cv2.getPerspectiveTransform(np.float32([(0, 0), (tw, 0), (tw, th), (0, th)]), np.float32(corners))
+    spots = {}
+    for name, rects in BOARD_SPOTS.items():
+        m = np.zeros((C.H, C.W), np.uint8)
+        for cx, cy, w, h, a in rects:
+            pts = cv2.boxPoints(((cx, cy), (w, h), -a)).reshape(-1, 1, 2).astype(np.float32)
+            cv2.fillPoly(m, [np.rint(cv2.perspectiveTransform(pts, H)).astype(np.int32)], 1)
+        spots[name] = (m > 0) & board
+    return spots
+
+
 def export_hot(C, out):
     """热点图：R = 序号×8（0 = 无），G、B 见 skyline_track；顺带算每个热点的可见包围盒和中心。"""
-    names = sorted({o["hot"] for o in C.meta["ids"] if o["hot"]})
+    masks = {}
+    for o in C.meta["ids"]:
+        if o["hot"]:
+            masks.setdefault(o["hot"], []).append(C.key[o["object"]])
+    masks = {name: np.isin(C.K, keys) for name, keys in masks.items()}
+    if "board" in masks:
+        for name, m in board_spots(C, masks["board"]).items():
+            masks[name] = m
+            masks["board"] = masks["board"] & ~m
+    names = sorted(masks)
     hot = np.zeros((C.H, C.W), np.uint8)
     info = {}
     for i, name in enumerate(names, 1):
-        m = np.isin(C.K, [C.key[o["object"]] for o in C.meta["ids"] if o["hot"] == name])
+        m = masks[name]
         if not m.any():
             continue
         hot[m] = i * 8

@@ -20,6 +20,8 @@ export const STYLES = [
 // 场景里的热点名 → 面板；action 表示不是面板的特殊行为
 export const HOTS = {
   board: { panel: 'about' },
+  now: { panel: 'now' },
+  work: { panel: 'work' },
   press: { panel: 'press' },
   monitor: { action: 'chat' },
   keyboard: { action: 'chat' },
@@ -45,6 +47,8 @@ export const HOTS = {
 
 export const LABELS = {
   board: { zh: '我是谁', en: 'Who is Simon?' },
+  now: { zh: '最近在做什么', en: 'What I am doing now' },
+  work: { zh: '实习经历', en: 'Where I have worked' },
   press: { zh: '剪报墙', en: 'Press clippings' },
   monitor: { zh: '跟我聊聊', en: 'Talk to me' },
   keyboard: { zh: '点键盘，跟我聊', en: 'Click the keyboard. Talk to me.' },
