@@ -456,16 +456,6 @@ def car_plaque(w=880, h=112):
     return im
 
 
-def now_note(w=380, h=320):
-    """显示器旁边的 NOW 便签：最近在做 / 在学 / 在玩。"""
-    s = card(w, h, YELLOW, seed=44)
-    d = ImageDraw.Draw(s)
-    d.text((24, 16), "NOW", font=font("marker", 76), fill=RED)
-    lines_text(d, (26, 120), "AI PM @ Tencent\nbuilding: F1 site\nwaiting: Xiaobu", "marker", 34)
-    return s
-
-
-# ───────────────────────── 项目刊物（桌上的“漫画”） ─────────────────────────
 def zine(title, issue, tagline, bg, accent, motif, w=660, h=900):
     im = paper(w, h, bg, grain=6, seed=issue)
     d = ImageDraw.Draw(im, "RGBA")
@@ -759,7 +749,6 @@ def main(out):
     notebook().save(out / "notebook.png")
     screen().save(out / "screen.png")
     small_papers(out)
-    now_note().save(out / "now.png")
     earth().save(out / "earth.png")
     car_plaque().save(out / "car_plaque.png")
     calendar().save(out / "calendar.png")

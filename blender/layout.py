@@ -3,9 +3,9 @@
 俯视机位、铺满物件、墙上软木板 + 剪报，右侧黑钢框落地窗外是楼群。
 每个可点的东西带 hot 名字，前端按它开面板：
   board / press / monitor / keyboard / mask（切换宇宙）/ zine-1 / zine-2 / zine-3（三个项目）
-  notebook（博客）/ phone / plant（兴趣）/ camera + photos（摄影）/ badge（工作）/ news（报纸）/ games（PS5、Switch）
-  music（唱片）/ headphones（耳机，也是歌单）/ contact（名片）/ fries / cars（显示器前的赛道和保时捷）/ calendar（年度回顾）/ globe（去过的地方）
-  movies（电影票根）/ cards（卡片盒：认知积累）/ cat（美短）/ now（NOW 便签）
+  notebook（博客）/ plant（兴趣）/ camera + photos（摄影）/ news（报纸）/ games（PS5、Switch）
+  music（AirPods：歌单）/ contact（名片和 iPhone）/ cars（911 车模）/ calendar（年度回顾）/ globe（去过的地方）
+  movies（电影票根）/ cards（卡片盒：认知积累）/ cat（美短）
 """
 import json
 import math
@@ -165,7 +165,6 @@ def build_monitor():
     slab("mon_base", 0.26, 0.17, 0.012, 0.03, (0, 0.05, 0.006), silver, hot="monitor").parent = root
     lt = light("screen_light", "AREA", "screen", 6, "#ffb07a", (0, -0.06, 0), rot=(-math.pi / 2, 0, 0), size=0.6, size_y=0.36)
     lt.parent = tilt
-    decal("sticky_a", 0.095, 0.08, (-0.87, 0.045), "now.png", yaw=-9, hot="now")   # NOW 便签：最近在做什么
 
 
 def build_track():
@@ -184,16 +183,9 @@ def build_track():
 def build_left():
     # PS5 Slim + GTA VI + DualSense（Roberto Domínguez，CC BY 4.0）：立在桌子左后角，点开是游戏
     glb("ps5", "models/ps5.glb", 0.33, (-1.14, 0.40, T), rot=(0, 0, R(18)), hot="games")
-    # AirPods Max（Mr.Philin，CC BY 4.0）：立在显示器左前方，点开和唱片一样是歌单
-    glb("airpods", "models/airpods_max.glb", 0.17, (-0.96, 0.17, T), rot=(0, 0, R(24)), hot="headphones")
-    # 唱片：从封套里抽出来一半，点开是黑胶播放器
-    sx, sy, vx, vy = -0.968, -0.06, -0.923, -0.03
-    box("vinyl_sleeve", (0.18, 0.18, 0.004), (sx, sy, T + 0.004), M("vinyl_sleeve", "#8e4ec6", 0.7), rot=(0, 0, R(8)), hot="music")
-    box("vinyl_stripe", (0.18, 0.03, 0.001), (sx + 0.006, sy - 0.045, T + 0.0066), M("vinyl_stripe", "#f5b301", 0.6), rot=(0, 0, R(8)), hot="music")
-    cyl("vinyl_disc", 0.085, 0.003, (vx, vy, T + 0.0085), M("vinyl_disc", "#16161a", 0.3), seg=64, hot="music")
-    torus("vinyl_groove", 0.061, 0.0012, (vx, vy, T + 0.0098), M("vinyl_groove", "#34363f", 0.3), seg=64, sub=6, hot="music")
-    cyl("vinyl_label", 0.034, 0.001, (vx, vy, T + 0.0105), M("vinyl_label", "#f5b301", 0.5), seg=40, hot="music")   # 不挖中心孔：墨线一描就把标签糊掉了
-        # 键盘（Diego Clemente 的 Vintage Keyboard，CC BY 4.0），不要鼠标
+    # AirPods Max（Mr.Philin，CC BY 4.0）：立在键盘左边，点开是 Apple Music 歌单
+    glb("airpods", "models/airpods_max.glb", 0.17, (-0.95, -0.04, T), rot=(0, 0, R(24)), hot="music")
+    # 键盘（Diego Clemente 的 Vintage Keyboard，CC BY 4.0），不要鼠标
     glb("kb", "models/keyboard.glb", 0.42, (-0.60, -0.09, T + 0.001), rot=(0, 0, R(5)), hot="keyboard")
     # 报纸（新闻）+ 项目一的刊物
     decal("newspaper", 0.25, 0.327, (-1.05, -0.34), "newspaper.png", yaw=11, hot="news", thick=0.007, edge="#e8e2d0")
@@ -202,12 +194,6 @@ def build_left():
     decal("ticket_a", 0.13, 0.055, (-0.50, -0.42), "ticket_0.png", yaw=9, hot="movies", thick=0.0006, edge="#f2e6c8")
     decal("ticket_b", 0.13, 0.055, (-0.47, -0.36), "ticket_1.png", yaw=-14, z=0.0012, hot="movies", thick=0.0006, edge="#f2e6c8")
     decal("ticket_c", 0.13, 0.055, (-0.52, -0.31), "ticket_2.png", yaw=4, z=0.0024, hot="movies", thick=0.0006, edge="#f2e6c8")
-    # 工牌（工作 / 实习）
-    bx, by, yaw = -0.14, 0.07, 14
-    box("badge", (0.075, 0.105, 0.004), (bx, by, T + 0.004), M("badge", "#ffffff", 0.5), rot=(0, 0, R(yaw)), hot="badge")
-    box("badge_head", (0.075, 0.03, 0.001), (bx - 0.009, by + 0.036, T + 0.0066), M("badge_head", "#111216", 0.5), rot=(0, 0, R(yaw)), hot="badge")
-    box("badge_photo", (0.034, 0.038, 0.001), (bx + 0.003, by - 0.012, T + 0.0066), M("badge_photo", "#bfe6ff", 0.5), rot=(0, 0, R(yaw)), hot="badge")
-    torus("badge_strap", 0.055, 0.004, (bx - 0.025, by + 0.10, T + 0.005), M("strap", "#2b6be4", 0.6), hot="badge", seg=28, sub=6).scale = (0.8, 1.0, 1.0)
 
 
 def build_center():
@@ -285,8 +271,8 @@ def build_right():
     # 刊物三本，扇形摊开
     decal("zine_roundtable", 0.205, 0.28, (0.50, -0.05), "zine_roundtable.png", yaw=-13, hot="zine-2", thick=0.006)
     decal("zine_athena", 0.205, 0.28, (0.71, -0.17), "zine_athena.png", yaw=9, hot="zine-3", thick=0.006, z=0.008)
-    # iPhone 17 Pro（zhe_kan，CC BY-NC-SA 4.0；原模型是正反两台，只留背面那台）：背面朝上平放，点开是 iOS App 项目
-    glb("phone", "models/iphone.glb", 0.15, (0.88, -0.39, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="phone", keep=lambda x, y, z: x < 0)
+    # iPhone 17 Pro（zhe_kan，CC BY-NC-SA 4.0；原模型是正反两台，只留背面那台）：背面朝上平放，点开是联系方式
+    glb("phone", "models/iphone.glb", 0.15, (0.88, -0.39, T), rot=(0, 0, R(-18)), pre=(R(-90), 0, 0), hot="contact", keep=lambda x, y, z: x < 0)
     # 相机
     cxm, cym, cyaw = 1.12, -0.16, R(-28)
     cam_b = M("cam_body", "#22242a", 0.5)

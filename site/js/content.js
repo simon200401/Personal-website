@@ -25,17 +25,14 @@ export const HOTS = {
   keyboard: { action: 'chat' },
   mask: { action: 'style' },
   'zine-1': { panel: 'project1' },
-  phone: { panel: 'project3' },
   'zine-2': { panel: 'project2' },
   'zine-3': { panel: 'project3' },
   notebook: { panel: 'blog' },
   plant: { panel: 'interests' },
-  badge: { panel: 'work' },
   news: { panel: 'news' },
   photos: { panel: 'photos' },
   games: { panel: 'games' },
   music: { panel: 'music' },
-  headphones: { panel: 'music' },
   contact: { panel: 'contact' },
   camera: { panel: 'photos' },
   cars: { panel: 'cars' },
@@ -44,7 +41,6 @@ export const HOTS = {
   movies: { panel: 'movies' },
   cards: { panel: 'knowledge' },
   cat: { panel: 'cat' },
-  now: { panel: 'now' },
 };
 
 export const LABELS = {
@@ -54,17 +50,14 @@ export const LABELS = {
   keyboard: { zh: '点键盘，跟我聊', en: 'Click the keyboard. Talk to me.' },
   mask: { zh: '换一个宇宙', en: 'Switch universe' },
   'zine-1': { zh: 'PitMind · F1 AI 搭子', en: 'PitMind · F1 AI companion' },
-  phone: { zh: '忍了么 · iOS App', en: 'RenLeMe · iOS app' },
   'zine-2': { zh: '《假如那颗苹果》· AI 短片', en: 'What If That Apple · AI short' },
   'zine-3': { zh: '忍了么 · iOS App', en: 'RenLeMe · iOS app' },
   notebook: { zh: '博客', en: 'Blog' },
   plant: { zh: '兴趣爱好', en: 'Interests' },
-  badge: { zh: '实习 / 工作', en: 'Work' },
   news: { zh: '今日新闻', en: 'News desk' },
   photos: { zh: '摄影', en: 'Photography' },
   games: { zh: '我喜欢的游戏', en: 'Games I love' },
-  music: { zh: '放张唱片', en: 'Play a record' },
-  headphones: { zh: '戴上耳机', en: 'Put the headphones on' },
+  music: { zh: '戴上耳机', en: 'Put the headphones on' },
   contact: { zh: '联系我', en: 'Contact' },
   camera: { zh: '摄影', en: 'Photography' },
   cars: { zh: '保时捷和赛车', en: 'Porsche & racing' },
@@ -73,7 +66,6 @@ export const LABELS = {
   movies: { zh: '喜欢的电影和剧', en: 'Films & shows' },
   cards: { zh: '认知积累：播客和公众号', en: 'Ideas I collect: podcasts & reads' },
   cat: { zh: '小布（我的美短）', en: 'Xiaobu, my cat' },
-  now: { zh: '最近在做什么', en: 'Now' },
 };
 
 const L = (zh, en) => ({ zh, en });
